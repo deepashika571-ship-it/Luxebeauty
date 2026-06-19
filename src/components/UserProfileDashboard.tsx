@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { User, Calendar, CreditCard, Gift, Heart, LogOut, ChevronRight, Bookmark, CircleCheck, AlertCircle, Award, Users, RefreshCw, UserPlus, Lock, CheckCircle, Info } from "lucide-react";
-import { Booking, UserProfile, BeautyService, OfferDeal } from "../types";
+import { User, Calendar, CreditCard, Gift, Heart, LogOut, ChevronRight, Bookmark, CircleCheck, AlertCircle, Award, Users, RefreshCw, UserPlus, Lock, CheckCircle, Info, Mail, XCircle, HelpCircle } from "lucide-react";
+import { Booking, UserProfile, BeautyService, OfferDeal, PaymentTransaction } from "../types";
 import { DEFAULT_SERVICES, DEFAULT_OFFERS } from "../services";
+import { db } from "../firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 interface UserProfileDashboardProps {
   userProfile: UserProfile | null;
@@ -24,8 +26,38 @@ export default function UserProfileDashboard({
   onConnectGoogle,
   onAddLoyaltyPoints
 }: UserProfileDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"appointments" | "profile" | "wishlist" | "loyalty" | "offers" | "contacts">("appointments");
+  const [activeTab, setActiveTab] = useState<"appointments" | "profile" | "wishlist" | "loyalty" | "offers" | "contacts" | "payments">("appointments");
   const [wishlistItems, setWishlistItems] = useState<BeautyService[]>([]);
+  const [userPayments, setUserPayments] = useState<PaymentTransaction[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+
+  const fetchUserPayments = async () => {
+    if (!userProfile) return;
+    setPaymentsLoading(true);
+    try {
+      const q = query(
+        collection(db, "payments"),
+        where("userEmail", "==", userProfile.email)
+      );
+      const querySnapshot = await getDocs(q);
+      const temp: PaymentTransaction[] = [];
+      querySnapshot.forEach((doc) => {
+        temp.push({ id: doc.id, ...doc.data() } as PaymentTransaction);
+      });
+      temp.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setUserPayments(temp);
+    } catch (err) {
+      console.warn("Failed to fetch user payments from Firestore:", err);
+    } finally {
+      setPaymentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "payments" && userProfile) {
+      fetchUserPayments();
+    }
+  }, [activeTab, userProfile]);
 
   // Google Contacts integrated state states
   const [syncedStylists, setSyncedStylists] = useState<Record<string, boolean>>({});
@@ -271,10 +303,24 @@ export default function UserProfileDashboard({
                 activeTab === "offers"
                   ? "bg-natural-text text-white font-semibold"
                   : "hover:bg-natural-bg hover:text-natural-gold"
-              }`}
+               }`}
             >
               <span className="flex items-center gap-2">
                 <Gift className="w-4 h-4" /> Saved Promo Coupons
+              </span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => setActiveTab("payments")}
+              className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer ${
+                activeTab === "payments"
+                  ? "bg-natural-text text-white font-semibold"
+                  : "hover:bg-natural-bg hover:text-natural-gold"
+               }`}
+            >
+              <span className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" /> Payments & Refunds
               </span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
@@ -472,6 +518,101 @@ export default function UserProfileDashboard({
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {activeTab === "payments" && (
+            <div className="space-y-6 animate-fade-in font-sans">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="font-serif text-lg font-medium text-zinc-900 dark:text-zinc-100">Transaction & Refund Ledger</h4>
+                  <p className="text-xs text-zinc-500">View live metrics of custom PhonePe payments, failures, and active manual refund timelines.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchUserPayments}
+                  disabled={paymentsLoading}
+                  className="px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${paymentsLoading ? "animate-spin" : ""}`} />
+                  Refresh
+                </button>
+              </div>
+
+              {paymentsLoading ? (
+                <div className="text-center py-10 text-zinc-500 text-xs">
+                  <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-natural-gold" />
+                  Loading sandbox transactions...
+                </div>
+              ) : userPayments.length === 0 ? (
+                <div className="border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl p-10 text-center text-zinc-500 text-xs">
+                  <CreditCard className="w-10 h-10 text-natural-gold mx-auto mb-2 shrink-0" />
+                  <p>No transaction history compiled.</p>
+                  <p className="mt-1 text-[11px] text-zinc-400">Secure an appointment booking using UPI or select PhonePe to populate logs.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {userPayments.map((p) => (
+                    <div key={p.id} className="bg-zinc-50 dark:bg-zinc-805 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-4 md:p-5 space-y-4 shadow-sm">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="font-mono text-[9px] text-[#4A3F3B] bg-zinc-200/50 dark:bg-zinc-750 px-2 py-0.5 rounded font-extrabold">{p.id}</span>
+                          <h5 className="font-bold text-xs text-zinc-900 dark:text-zinc-50 mt-1.5">{p.serviceName}</h5>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-mono font-bold text-sm text-zinc-900 dark:text-white">₹{p.amount}</p>
+                          <span className={`inline-flex items-center gap-1 text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full mt-1 ${
+                            p.status === "paid"
+                              ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-400"
+                              : p.status === "failed"
+                              ? "bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-450"
+                              : "bg-indigo-100 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-400"
+                          }`}>
+                            {p.status === "paid" ? "Paid (Success)" : p.status === "failed" ? "Payment Failed" : p.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      {p.status === "failed" && (
+                        <div className="bg-amber-50/40 dark:bg-[#201D1A] border border-amber-250 dark:border-amber-900/40 rounded-xl p-3.5 text-xs space-y-3">
+                          <div className="flex gap-2 text-amber-900 dark:text-amber-200">
+                            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-bold text-[11px]">2-Day Refund Guarantee Details</p>
+                              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-normal">
+                                This transaction failed. Aura Luxe Studio guarantees a manual reverse credit straight to your UPI account: <strong className="font-mono text-zinc-805 dark:text-zinc-300">{p.upiIdUsed}</strong> within 2 days.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center pt-2.5 border-t border-amber-200/25 text-[10px] text-zinc-450 dark:text-zinc-405">
+                            <span>PhonePe Refund Status:</span>
+                            <span className={`font-mono uppercase font-extrabold px-1.5 py-0.5 rounded ${
+                              p.refundStatus === "completed"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-amber-150 text-amber-900 animate-pulse"
+                            }`}>
+                              {p.refundStatus === "completed" ? "Completed (Credited)" : "Processing (Within 2 Days)"}
+                            </span>
+                          </div>
+
+                          {p.emailSent && (
+                            <div className="pt-2 flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                              <Mail className="w-3.5 h-3.5" />
+                              <span>Refund confirmation email sent to {p.userEmail}!</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center text-[10px] text-zinc-450 dark:text-zinc-500 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                        <span>Ref Number (UTR): <strong className="font-mono font-bold text-zinc-700 dark:text-zinc-400">{p.transactionRef}</strong></span>
+                        <span>Date: {new Date(p.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

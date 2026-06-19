@@ -93,3 +93,28 @@ export interface AppNotification {
   read: boolean;
   timestamp: string;
 }
+
+export interface PaymentTransaction {
+  id: string;
+  bookingId: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  userPhone: string;
+  serviceId: string;
+  serviceName: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  upiIdUsed: string; // The customer's UPI ID or VPA
+  merchantUpiId: string; // "9342956011@axl" (PhonePe UPI ID)
+  status: 'paid' | 'failed' | 'refunded';
+  refundStatus: 'none' | 'pending' | 'completed';
+  refundWindowDays: number; // 2 days limit
+  refundAmount?: number;
+  refundCompletedAt?: string;
+  emailSent: boolean;
+  emailSentAt?: string;
+  createdAt: string;
+  transactionRef: string; // UTR code
+}
+

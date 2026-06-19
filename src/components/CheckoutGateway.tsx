@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Check, CreditCard, Landmark, Smartphone, PiggyBank, DollarSign, Download, Printer, Percent, ArrowLeft, Loader2, Sparkles } from "lucide-react";
-import { Booking, PaymentMethod, PaymentStatus } from "../types";
+import { Check, CreditCard, Landmark, Smartphone, PiggyBank, DollarSign, Download, Printer, Percent, ArrowLeft, Loader2, Sparkles, Copy, CheckCircle2, XCircle, Mail, AlertCircle, PhoneCall, HelpCircle } from "lucide-react";
+import { Booking, PaymentMethod, PaymentStatus, PaymentTransaction } from "../types";
 import { DEFAULT_SERVICES } from "../services";
+import { db } from "../firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 interface CheckoutGatewayProps {
   booking: Booking;
@@ -28,6 +30,12 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [invoiceReady, setInvoiceReady] = useState<Booking | null>(null);
+
+  // New PhonePe UPI states
+  const [upiCopied, setUpiCopied] = useState(false);
+  const [simulateStatus, setSimulateStatus] = useState<'success' | 'failed'>('success');
+  const [isFailedCompleted, setIsFailedCompleted] = useState(false);
+  const [failedTransaction, setFailedTransaction] = useState<PaymentTransaction | null>(null);
 
   // Math totals
   const subtotal = booking.servicePrice;
@@ -74,26 +82,153 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     const invoiceId = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+    const txId = `PAY-${Date.now()}`;
+    const utrCode = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+
+    // Determine success path
+    const isSuccess = paymentMethod !== "upi" || simulateStatus === "success";
+
     const updatedBooking: Booking = {
       ...booking,
       paymentMethod,
-      paymentStatus: paymentMethod === "cash" ? "pending" : "paid",
-      status: "confirmed",
+      paymentStatus: paymentMethod === "cash" ? "pending" : (isSuccess ? "paid" : "unpaid"),
+      status: isSuccess ? "confirmed" : "pending",
       invoiceId,
       servicePrice: finalTotal,
     };
 
-    setIsProcessing(false);
-    setIsCompleted(true);
-    setInvoiceReady(updatedBooking);
+    const upiUsed = paymentMethod === "upi" ? (upiPhone || "9342956011@axl") : "";
 
-    // Trigger success callback
-    onPaymentSuccess(paymentMethod, paymentMethod === "cash" ? "pending" : "paid", updatedBooking);
+    const tx: PaymentTransaction = {
+      id: txId,
+      bookingId: booking.id,
+      userId: booking.userId || "guest_uid",
+      userEmail: booking.userEmail,
+      userName: booking.userName,
+      userPhone: booking.userPhone,
+      serviceId: booking.serviceId,
+      serviceName: booking.serviceName,
+      amount: finalTotal,
+      paymentMethod,
+      upiIdUsed: upiUsed,
+      merchantUpiId: "9342956011@axl", // PhonePe UPI ID
+      status: isSuccess ? "paid" : "failed",
+      refundStatus: isSuccess ? "none" : "pending",
+      refundWindowDays: 2,
+      createdAt: new Date().toISOString(),
+      transactionRef: utrCode,
+      emailSent: false,
+    };
+
+    try {
+      // Collect and save payment transaction in Firestore!
+      await setDoc(doc(db, "payments", txId), tx);
+    } catch (err) {
+      console.warn("Firestore collection update failed:", err);
+    }
+
+    setIsProcessing(false);
+
+    if (isSuccess) {
+      setIsCompleted(true);
+      setInvoiceReady(updatedBooking);
+      // Trigger success callback
+      onPaymentSuccess(paymentMethod, paymentMethod === "cash" ? "pending" : "paid", updatedBooking);
+    } else {
+      setFailedTransaction(tx);
+      setIsFailedCompleted(true);
+    }
   };
 
   const handlePrint = () => {
     window.print();
   };
+
+  if (isFailedCompleted && failedTransaction) {
+    return (
+      <div id="failed-refund-screen" className="max-w-2xl mx-auto bg-white dark:bg-zinc-900 border border-amber-100 dark:border-zinc-850 rounded-3xl shadow-2xl p-6 md:p-8 animate-fade-in text-zinc-900 dark:text-zinc-100 font-sans">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center bg-rose-50 dark:bg-rose-950/40 p-4 rounded-full text-rose-600 dark:text-rose-400 mb-4">
+            <XCircle className="w-12 h-12 stroke-[2]" />
+          </div>
+          <h3 className="font-serif text-2xl text-zinc-900 dark:text-zinc-50 font-semibold tracking-wide">PhonePe Transaction Failed</h3>
+          <p className="text-xs text-rose-600 dark:text-rose-450 font-bold uppercase tracking-widest mt-1.5">No funds debited? Refund Initialized Automatically</p>
+          <p className="text-xs text-zinc-500 mt-2 max-w-md mx-auto">
+            Your payment authorization to merchant UPI code <span className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded font-bold">9342956011@axl</span> could not be confirmed by the banking gateway.
+          </p>
+        </div>
+
+        {/* Informational Refund Timeline Banner */}
+        <div className="bg-amber-50/30 dark:bg-[#2A241E] border border-amber-200/50 dark:border-amber-900/40 rounded-2xl p-5 space-y-4">
+          <div className="flex gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <h5 className="font-bold text-xs text-amber-900 dark:text-amber-200">2-Day Refund Guarantee</h5>
+              <p className="text-[11px] text-zinc-650 dark:text-zinc-400 mt-1 leading-relaxed">
+                If money was deducted from your account, PhonePe standard protocols guarantee a direct, secure rebound back into your UPI account: <strong className="font-mono text-zinc-800 dark:text-zinc-200">{failedTransaction.upiIdUsed}</strong> within <strong>48 hours (2 Days)</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div className="border-t border-amber-200/25 pt-4 flex gap-3">
+            <Mail className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <h5 className="font-bold text-xs text-amber-900 dark:text-amber-200">Automated E-mail Notifications</h5>
+              <p className="text-[11px] text-zinc-650 dark:text-zinc-400 mt-1 leading-relaxed">
+                As soon as the salon administrator reconciles this failed payout on our terminal, a confirmation email will be dispatched immediately to <strong className="text-zinc-800 dark:text-zinc-200">{failedTransaction.userEmail}</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Transaction Ledger Table */}
+        <div className="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-5 mt-6 space-y-3 text-xs">
+          <div className="flex justify-between items-center text-xs pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+            <span className="text-zinc-550">Transaction ID:</span>
+            <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">{failedTransaction.id}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+            <span className="text-zinc-550">Payment Channel:</span>
+            <span className="font-semibold uppercase text-xs">{failedTransaction.paymentMethod === "upi" ? "PhonePe UPI" : failedTransaction.paymentMethod}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+            <span className="text-zinc-550 flex items-center gap-1">Reference No (UTR): <HelpCircle className="w-3.5 h-3.5 text-zinc-400" title="12-digit transaction reference" /></span>
+            <span className="font-mono font-bold text-zinc-700 dark:text-zinc-300">{failedTransaction.transactionRef}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+            <span className="text-zinc-550">UPI VPA targeted for Refund:</span>
+            <span className="font-mono font-bold text-rose-500">{failedTransaction.upiIdUsed}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs pt-1">
+            <span className="text-zinc-800 dark:text-zinc-200 font-bold">Total Amount to Reconcile:</span>
+            <span className="font-mono font-bold text-zinc-950 dark:text-white text-sm">₹{failedTransaction.amount}</span>
+          </div>
+        </div>
+
+        {/* Primary Screen controls */}
+        <div className="flex gap-3 mt-8">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-[11px] uppercase py-3.5 rounded-xl tracking-wider text-center cursor-pointer transition-colors"
+          >
+            Go Back
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => {
+              setIsFailedCompleted(false);
+              setFailedTransaction(null);
+            }}
+            className="flex-1 bg-zinc-900 hover:bg-black dark:bg-zinc-850 dark:hover:bg-zinc-800 text-white font-bold text-[11px] uppercase py-3.5 rounded-xl tracking-wider text-center cursor-pointer transition-colors"
+          >
+            Retry Payment
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isCompleted && invoiceReady) {
     return (
@@ -278,27 +413,91 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
 
           {/* Dynamic input areas */}
           {paymentMethod === "upi" && (
-            <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-750 space-y-3">
-              <label className="block text-xs font-semibold uppercase text-zinc-500 tracking-wider">UPI Phone Number ID / VPA</label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. name@okhdfcbank or 9876543210@paytm"
-                value={upiPhone}
-                onChange={(e) => setUpiPhone(e.target.value)}
-                className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-pink-400"
-              />
-              <div className="flex gap-3 justify-center items-center py-2">
-                <div className="bg-white p-2.5 rounded-lg border border-zinc-100 shadow-sm flex flex-col items-center">
-                  {/* Luxury Mocking QR Code */}
-                  <div className="w-24 h-24 bg-zinc-200 flex items-center justify-center rounded-md font-mono text-[9px] text-gray-400 border border-gray-300">
-                    <div className="grid grid-cols-3 gap-0.5 w-[85%] h-[85%] bg-white p-1">
-                      {Array.from({ length: 9 }).map((_, i) => (
-                        <div key={i} className={`border border-zinc-800 ${i % 2 === 0 ? "bg-zinc-800" : "bg-white"}`} />
-                      ))}
-                    </div>
-                  </div>
-                  <span className="text-[9px] text-gray-500 font-mono tracking-widest mt-1.5 uppercase">SCAN FOR UPI</span>
+            <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-2xl p-5 border border-zinc-100 dark:border-zinc-750 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-zinc-450 dark:text-zinc-500 tracking-wider">Merchant PhonePe Address</label>
+                  <p className="font-mono text-xs font-bold text-natural-gold mt-0.5">9342956011@axl</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText("9342956011@axl");
+                    setUpiCopied(true);
+                    setTimeout(() => setUpiCopied(false), 2000);
+                  }}
+                  className="flex items-center gap-1 text-[10px] bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-805 border border-zinc-200 dark:border-zinc-700 px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer text-zinc-700 dark:text-zinc-350"
+                >
+                  <Copy className="w-3 h-3 text-zinc-400" />
+                  <span>{upiCopied ? "Copied!" : "Copy VPA"}</span>
+                </button>
+              </div>
+
+              {/* Scannable Real UPI QR Generation */}
+              <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl shadow-sm text-center">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                    `upi://pay?pa=9342956011@axl&pn=Aura%20Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBooking_${booking.id}`
+                  )}`}
+                  alt="PhonePe UPI QR Code"
+                  className="w-36 h-36 p-1.5 border border-zinc-150 rounded-lg animate-fade-in"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="text-[9px] text-[#4A3F3B] dark:text-zinc-350 font-extrabold tracking-widest mt-2 uppercase font-mono">Scan via PhonePe, GPay, or Paytm</span>
+                <p className="text-[9px] text-zinc-400 max-w-[210px] leading-normal mt-0.5">Scans will prep payout of ₹{finalTotal} straight to Aura Luxe Studio account.</p>
+
+                {/* Direct Mobile launch deep-link */}
+                <a
+                  href={`upi://pay?pa=9342956011@axl&pn=Aura%2520Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBooking_${booking.id}`}
+                  className="w-full text-center bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-900 text-white font-bold py-2 px-3 rounded-xl text-[10px] uppercase font-mono tracking-wider transition-colors mt-3"
+                >
+                  ⚡ Direct mobile launch deep link
+                </a>
+              </div>
+
+              {/* Customer UPI Input */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold uppercase text-zinc-500 tracking-wider">Your Payment UPI ID (VPA)</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. name@okaxis or 9342956011@ybl"
+                  value={upiPhone}
+                  onChange={(e) => setUpiPhone(e.target.value)}
+                  className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-xs outline-none focus:border-amber-400 font-mono text-zinc-800 dark:text-zinc-200"
+                />
+                <p className="text-[10px] text-zinc-400 leading-normal">Required so that salon operators can credit exact refunds back to your UPI account within 2 days in case transaction fails.</p>
+              </div>
+
+              {/* Simulation selector tool to fulfill requirements */}
+              <div className="bg-amber-50/20 dark:bg-[#201D1A] border border-dashed border-amber-300/60 p-4 rounded-xl space-y-2 text-xs">
+                <span className="block font-bold text-amber-900 dark:text-amber-300 text-[10px] uppercase tracking-wider">UPI Authorization Sandbox</span>
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Our preview environment lets you test the full success path or simulate failed transactions with refund guarantees.</p>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setSimulateStatus("success")}
+                    className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border text-[10px] font-bold uppercase transition-all cursor-pointer ${
+                      simulateStatus === "success"
+                        ? "bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400"
+                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-650"
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Simulate Success
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSimulateStatus("failed")}
+                    className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border text-[10px] font-bold uppercase transition-all cursor-pointer ${
+                      simulateStatus === "failed"
+                        ? "bg-rose-500/10 border-rose-500 text-rose-600 dark:text-rose-400"
+                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-650"
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                    Simulate Failure
+                  </button>
                 </div>
               </div>
             </div>
