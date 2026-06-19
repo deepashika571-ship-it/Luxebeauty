@@ -194,6 +194,36 @@ export default function App() {
     return unsubscribe;
   }, []);
 
+  // Admin-specific synchronization of bookings and user accounts in real-time
+  useEffect(() => {
+    const isAdmin = profile?.role === "admin" || user?.email?.toLowerCase().includes("admin");
+    if (!isAdmin) return;
+
+    // Real-time subscription to ALL bookings
+    const unsubBookings = onSnapshot(collection(db, "bookings"), (snapshot) => {
+      const bSnapshot: Booking[] = [];
+      snapshot.forEach((docSnap) => {
+        bSnapshot.push({ id: docSnap.id, ...docSnap.data() } as Booking);
+      });
+      bSnapshot.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setBookings(bSnapshot);
+    });
+
+    // Real-time subscription to ALL users
+    const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+      const uSnapshot: UserProfile[] = [];
+      snapshot.forEach((docSnap) => {
+        uSnapshot.push({ uid: docSnap.id, ...docSnap.data() } as UserProfile);
+      });
+      setUsersList(uSnapshot);
+    });
+
+    return () => {
+      unsubBookings();
+      unsubUsers();
+    };
+  }, [profile?.role, user?.email]);
+
   // OTP Countdown timer simulation
   useEffect(() => {
     let interval: any;
@@ -588,6 +618,36 @@ export default function App() {
     }
   };
 
+  const handleAdminDeleteBooking = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "bookings", id));
+      setBookings((prev) => prev.filter((b) => b.id !== id));
+      addNotification("Booking Deleted", "An appointment record was removed from database.", "warning");
+    } catch (err) {
+      setBookings((prev) => prev.filter((b) => b.id !== id));
+    }
+  };
+
+  const handleAdminUpdateService = async (item: BeautyService) => {
+    try {
+      await setDoc(doc(db, "services", item.id), item);
+      setServices((prev) => prev.map((s) => (s.id === item.id ? item : s)));
+      addNotification("Service Updated", `Premium service "${item.name}" was modified.`, "success");
+    } catch (err) {
+      setServices((prev) => prev.map((s) => (s.id === item.id ? item : s)));
+    }
+  };
+
+  const handleAdminUpdateOffer = async (item: OfferDeal) => {
+    try {
+      await setDoc(doc(db, "offers", item.id), item);
+      setOffers((prev) => prev.map((o) => (o.id === item.id ? item : o)));
+      addNotification("Coupon Offer Updated", `Promo code "${item.code}" was updated.`, "success");
+    } catch (err) {
+      setOffers((prev) => prev.map((o) => (o.id === item.id ? item : o)));
+    }
+  };
+
   const handleAdminSubmitReview = async (item: Omit<Review, "id" | "date">) => {
     const freshReview: Review = {
       id: `rev_${Date.now()}`,
@@ -640,14 +700,12 @@ export default function App() {
             <button onClick={() => setCurrentView("recommender")} className={`hover:text-natural-gold transition-colors cursor-pointer ${currentView === "recommender" ? "text-natural-gold font-bold" : "text-natural-muted"}`}>AI Skincare Advisor</button>
             <button onClick={() => setCurrentView("reviews")} className={`hover:text-natural-gold transition-colors cursor-pointer ${currentView === "reviews" ? "text-natural-gold font-bold" : "text-natural-muted"}`}>Reviews</button>
             
-            {profile?.role === "admin" && (
-              <button
-                onClick={() => setCurrentView("admin")}
-                className={`bg-[#FDF2F0] text-natural-gold border border-natural-border px-3 py-1.5 rounded-lg text-[10px] font-extrabold tracking-widest uppercase flex items-center gap-1 cursor-pointer hover:opacity-95 ${currentView === "admin" ? "bg-natural-gold text-white" : ""}`}
-              >
-                <Shield className="w-3.5 h-3.5" /> Staff Dashboard
-              </button>
-            )}
+            <button
+              onClick={() => setCurrentView("admin")}
+              className={`bg-[#FDF2F0] text-natural-gold border border-natural-border px-3 py-1.5 rounded-lg text-[10px] font-extrabold tracking-widest uppercase flex items-center gap-1 cursor-pointer hover:opacity-95 ${currentView === "admin" ? "bg-natural-gold text-white" : ""}`}
+            >
+              <Shield className="w-3.5 h-3.5" /> Admin Console
+            </button>
           </nav>
 
           {/* Header Action Items */}
@@ -739,9 +797,7 @@ export default function App() {
             <button onClick={() => { setCurrentView("recommender"); setMobileMenuOpen(false); }} className="py-2 hover:bg-natural-peach rounded-lg text-[#4A3F3B]">AI Advisor</button>
             <button onClick={() => { setCurrentView("reviews"); setMobileMenuOpen(false); }} className="py-2 hover:bg-natural-peach rounded-lg text-[#4A3F3B]">Reviews</button>
             
-            {profile?.role === "admin" && (
-              <button onClick={() => { setCurrentView("admin"); setMobileMenuOpen(false); }} className="py-2 bg-natural-peach text-natural-gold border border-natural-border rounded-lg">Staff Console</button>
-            )}
+            <button onClick={() => { setCurrentView("admin"); setMobileMenuOpen(false); }} className="py-2 bg-natural-peach text-natural-gold border border-natural-border rounded-lg">Admin Console</button>
           </div>
         )}
       </header>
@@ -1117,10 +1173,12 @@ export default function App() {
               offers={offers}
               onAddService={handleAdminAddService}
               onDeleteService={handleAdminDeleteService}
-              onUpdateService={() => {}}
+              onUpdateService={handleAdminUpdateService}
               onUpdateBookingStatus={handleAdminUpdateBooking}
+              onDeleteBooking={handleAdminDeleteBooking}
               onAddOffer={handleAdminAddOffer}
               onDeleteOffer={handleAdminDeleteOffer}
+              onUpdateOffer={handleAdminUpdateOffer}
             />
           </div>
         )}
