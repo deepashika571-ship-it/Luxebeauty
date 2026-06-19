@@ -213,6 +213,12 @@ export default function App() {
         const loaded: BeautyService[] = [];
         srvs.forEach((doc) => loaded.push({ id: doc.id, ...doc.data() } as BeautyService));
         setServices(loaded);
+      } else {
+        // Build initial seed
+        for (const s of DEFAULT_SERVICES) {
+          await setDoc(doc(db, "services", s.id), s);
+        }
+        setServices(DEFAULT_SERVICES);
       }
       
       const offs = await getDocs(collection(db, "offers"));
@@ -220,6 +226,12 @@ export default function App() {
         const loaded: OfferDeal[] = [];
         offs.forEach((doc) => loaded.push({ id: doc.id, ...doc.data() } as OfferDeal));
         setOffers(loaded);
+      } else {
+        // Build initial seed
+        for (const o of DEFAULT_OFFERS) {
+          await setDoc(doc(db, "offers", o.id), o);
+        }
+        setOffers(DEFAULT_OFFERS);
       }
 
       await syncAllReviews();
@@ -235,6 +247,12 @@ export default function App() {
         const loaded: Review[] = [];
         revs.forEach((doc) => loaded.push({ id: doc.id, ...doc.data() } as Review));
         setReviews(loaded);
+      } else {
+        // Build initial seed
+        for (const r of INITIAL_REVIEWS) {
+          await setDoc(doc(db, "reviews", r.id), r);
+        }
+        setReviews(INITIAL_REVIEWS);
       }
     } catch (err) {
       console.warn("Reviews syncing in static storage");
@@ -1110,172 +1128,55 @@ export default function App() {
         {/* VIEW 9: LOGIN & REGISTRATION PORTAL */}
         {currentView === "login" && (
           <div className="max-w-md mx-auto px-4 py-16 animate-fade-in text-[#4A3F3B]">
-            <div className="bg-white dark:bg-zinc-900 border border-natural-border rounded-3xl shadow-sm overflow-hidden p-6 md:p-8 space-y-6">
+            <div className="bg-white dark:bg-zinc-900 border border-natural-border rounded-3xl shadow-md overflow-hidden p-8 space-y-6 text-center">
               
-              <div className="text-center space-y-1.5">
-                <h3 className="font-serif text-2xl font-semibold tracking-wide">
-                  {authMode === "login" ? "Guest Lounge Access" : "Create Styling Account"}
+              <div className="space-y-2">
+                <div className="w-12 h-12 bg-natural-peach rounded-2xl flex items-center justify-center mx-auto text-natural-gold border border-natural-border/30 font-serif text-xl font-bold">
+                  A
+                </div>
+                <h3 className="font-serif text-2xl font-semibold tracking-wide mt-2 text-zinc-900 dark:text-zinc-100">
+                  Guest Lounge Access
                 </h3>
-                <p className="text-xs text-natural-muted">Welcome to Aura Luxe Studio's booking sanctuary rooms.</p>
+                <p className="text-xs text-natural-muted leading-relaxed">
+                  Welcome to Aura Luxe Studio's sanctuary. Sign in using your Google account to access luxury booking forms, personalize your wishlists, and track beauty loyalty rewards.
+                </p>
               </div>
 
               {authError && (
-                <div className="bg-red-50 text-red-700 text-xs p-3 rounded-xl border border-red-200">
+                <div className="bg-red-50 text-red-700 text-xs p-3.5 rounded-xl border border-red-100 text-left font-sans leading-relaxed">
+                  <span className="font-bold block mb-0.5">Authentication Error</span>
                   {authError}
+                  {authError.includes("auth/operation-not-allowed") && (
+                    <span className="block mt-1.5 text-[11px] text-red-600 font-semibold">
+                      Note: You must enable Google Authentication inside your Firebase Console to authorize this action.
+                    </span>
+                  )}
                 </div>
               )}
               {authSuccess && (
-                <div className="bg-emerald-50 text-emerald-800 text-xs p-3 rounded-xl border border-emerald-200 font-semibold">
+                <div className="bg-emerald-50 text-emerald-850 text-xs p-3.5 rounded-xl border border-emerald-100 font-semibold font-sans text-left leading-relaxed">
                   {authSuccess}
                 </div>
               )}
-
-              {/* Toggle controls */}
-              <div className="flex bg-natural-bg dark:bg-zinc-800 p-1 rounded-xl text-xs font-semibold text-center text-[#4A3F3B]">
-                <button
-                  type="button"
-                  onClick={() => { setAuthMode("login"); setAuthError(""); }}
-                  className={`flex-1 py-2 rounded-lg cursor-pointer transition-all ${authMode === "login" ? "bg-white dark:bg-zinc-900 text-natural-gold shadow-sm font-bold" : "text-natural-muted"}`}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setAuthMode("register"); setAuthError(""); }}
-                  className={`flex-1 py-2 rounded-lg cursor-pointer transition-all ${authMode === "register" ? "bg-white dark:bg-zinc-900 text-natural-gold shadow-sm font-bold" : "text-natural-muted"}`}
-                >
-                  Sign Up
-                </button>
-              </div>
 
               {/* GOOGLE SIGN-IN OAUTH COMPONENT */}
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
-                className="w-full flex items-center justify-center gap-2 border border-natural-border hover:bg-neutral-100/50 hover:dark:bg-zinc-800 rounded-xl py-3 text-xs font-bold tracking-wide transition-colors cursor-pointer text-[#4A3F3B]"
+                className="w-full flex items-center justify-center gap-3 border border-natural-border hover:bg-neutral-100/50 hover:dark:bg-zinc-800 rounded-xl py-3.5 text-xs font-bold tracking-wide transition-all duration-200 cursor-pointer text-[#4A3F3B] dark:text-zinc-200 shadow-sm active:translate-y-0.5"
               >
-                {/* Standard Google logo silhouette */}
-                <span className="w-4 h-4 bg-natural-gold rounded-full flex items-center justify-center text-white text-[9px] font-bold">G</span>
+                {/* Google Icon Circle styled beautifully */}
+                <div className="w-5 h-5 bg-[#4A3F3B] text-white rounded-full flex items-center justify-center text-[10px] font-sans font-bold">
+                  G
+                </div>
                 <span>Continue with Google Sign-In</span>
               </button>
 
-              <div className="relative">
-                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1px] bg-natural-border"></div>
-                <span className="relative z-10 bg-white dark:bg-zinc-900 px-3 text-[10px] text-natural-muted uppercase tracking-widest text-center block max-w-max mx-auto">or credentials</span>
+              <div className="pt-2">
+                <p className="text-[10px] text-natural-muted leading-relaxed">
+                  For your security and a seamless lounge experience, Aura Luxe Studio utilizes Google as our exclusive authentication partner. No passwords are stored on our servers.
+                </p>
               </div>
-
-              {authMode === "login" ? (
-                /* LOGIN FORM */
-                <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs font-sans">
-                  <div className="space-y-1">
-                    <label className="block font-bold text-natural-muted uppercase tracking-wider">Email Support</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="guest@mail.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full bg-natural-bg dark:bg-zinc-800 border border-natural-border rounded-xl px-4 py-2.5 outline-none focus:ring-1 focus:ring-natural-gold"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block font-bold text-natural-muted uppercase tracking-wider">Lounge Password</label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="******"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full bg-natural-bg dark:bg-zinc-800 border border-natural-border rounded-xl px-4 py-2.5 outline-none focus:ring-1 focus:ring-natural-gold"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full bg-[#4A3F3B] hover:bg-[#3D3330] text-white font-bold tracking-widest uppercase py-3 rounded-xl transition-all cursor-pointer shadow-md text-xs"
-                  >
-                    Authorize Sign In
-                  </button>
-                </form>
-              ) : (
-                /* CREATE ACCOUNT FORM WITH OTP SIM */
-                <form onSubmit={handleRegisterSubmit} className="space-y-4 text-xs font-sans text-natural-text">
-                  <div className="space-y-1">
-                    <label className="block font-bold text-natural-muted uppercase tracking-wider">Full Guest Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ananya Sharma"
-                      value={regName}
-                      onChange={(e) => setRegName(e.target.value)}
-                      className="w-full bg-natural-bg dark:bg-zinc-800 border border-natural-border rounded-xl px-4 py-2.5 outline-none focus:ring-1 focus:ring-natural-gold"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block font-bold text-natural-muted uppercase tracking-wider">Email Address</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="yourname@gmail.com"
-                      value={regEmail}
-                      onChange={(e) => setRegEmail(e.target.value)}
-                      className="w-full bg-natural-bg dark:bg-zinc-800 border border-natural-border rounded-xl px-4 py-2.5 outline-none focus:ring-1 focus:ring-natural-gold"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block font-bold text-natural-muted uppercase tracking-wider">Phone Line</label>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="+91 98765 43210"
-                      value={regPhone}
-                      onChange={(e) => setRegPhone(e.target.value)}
-                      className="w-full bg-natural-bg dark:bg-zinc-800 border border-natural-border rounded-xl px-4 py-2.5 outline-none focus:ring-1 focus:ring-natural-gold"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="block font-bold text-natural-muted uppercase tracking-wider">Country Origin</label>
-                      <select
-                        value={regCountry}
-                        onChange={(e) => setRegCountry(e.target.value)}
-                        className="w-full bg-natural-bg dark:bg-zinc-800 border border-natural-border rounded-xl px-3 py-2 outline-none focus:ring-1 focus:ring-natural-gold text-[#4A3F3B]"
-                      >
-                        <option value="India">India</option>
-                        <option value="United States">USA</option>
-                        <option value="United Kingdom">UK</option>
-                        <option value="Singapore">Singapore</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="block font-bold text-natural-muted uppercase tracking-wider">Referral Code</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. LUXE1234"
-                        value={regReferral}
-                        onChange={(e) => setRegReferral(e.target.value)}
-                        className="w-full bg-natural-bg dark:bg-zinc-800 border border-natural-border rounded-xl px-3 py-2 outline-none focus:ring-1 focus:ring-natural-gold"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block font-bold text-natural-muted uppercase tracking-wider">Lounge Password</label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="At least 6 characters"
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      className="w-full bg-natural-bg dark:bg-zinc-800 border border-natural-border rounded-xl px-4 py-2.5 outline-none focus:ring-1 focus:ring-natural-gold"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full bg-[#4A3F3B] hover:bg-[#3D3330] text-white font-bold tracking-widest uppercase py-3 rounded-xl transition-all cursor-pointer shadow hover:scale-101 text-xs"
-                  >
-                    Generate OTP Code
-                  </button>
-                </form>
-              )}
             </div>
           </div>
         )}
