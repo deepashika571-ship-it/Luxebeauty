@@ -53,14 +53,16 @@ export default function AdminPanel({
     // Check if the current user exists and is an admin
     const checkAdmin = () => {
       const currentUser = auth.currentUser;
-      if (currentUser && currentUser.email?.toLowerCase().includes("admin")) {
+      const email = currentUser?.email?.toLowerCase();
+      if (email && (email === "beauty@admin" || email.includes("admin"))) {
         setIsAdminAuthenticated(true);
       }
     };
     
     checkAdmin();
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user && user.email?.toLowerCase().includes("admin")) {
+      const email = user?.email?.toLowerCase();
+      if (email && (email === "beauty@admin" || email.includes("admin"))) {
         setIsAdminAuthenticated(true);
       }
     });
@@ -80,10 +82,10 @@ export default function AdminPanel({
 
     const emailClean = adminEmail.trim().toLowerCase();
     
-    // Direct bypass credential matching for sandbox testing / grading convenience
+    // Direct bypass credential matching for website owner console entry convenience
     if (
-      (emailClean === "admin@luxebeauty.com" || emailClean === "admin@luxesalon.com") &&
-      adminPassword === "adminpassword123"
+      emailClean === "beauty@admin" &&
+      adminPassword === "beauty@123"
     ) {
       setIsAdminAuthenticated(true);
       triggerNotify("Welcome back, Master Administrator!");
@@ -93,7 +95,8 @@ export default function AdminPanel({
 
     try {
       const userCreds = await signInWithEmailAndPassword(auth, adminEmail.trim(), adminPassword);
-      if (userCreds.user.email?.toLowerCase().includes("admin")) {
+      const email = userCreds.user.email?.toLowerCase();
+      if (email && (email === "beauty@admin" || email.includes("admin"))) {
         setIsAdminAuthenticated(true);
         triggerNotify(`Console authorized for: ${userCreds.user.email}`);
       } else {
@@ -349,23 +352,6 @@ export default function AdminPanel({
             )}
           </button>
         </form>
-
-        {/* Sandboxed Testing Credentials Hint - elegant & helper oriented so they don't get stuck */}
-        <div className="mt-6 pt-5 border-t border-dashed border-zinc-200 dark:border-zinc-800 space-y-2">
-          <p className="text-[10px] uppercase font-bold tracking-widest text-zinc-400 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
-            Sandbox Developer Pre-set Instructions:
-          </p>
-          <div className="bg-zinc-50 dark:bg-zinc-850 p-3.5 rounded-xl border border-zinc-100 dark:border-zinc-800/60 text-[11px] text-zinc-600 dark:text-zinc-400 space-y-1.5">
-            <p>You can authenticate with our Master Admin profile bypass credentials:</p>
-            <div className="grid grid-cols-[60px_1fr] gap-x-1 font-mono text-[10px]">
-              <span className="text-zinc-400">Email:</span>
-              <span className="text-zinc-800 dark:text-zinc-200 font-bold select-all">admin@luxebeauty.com</span>
-              <span className="text-zinc-400">Password:</span>
-              <span className="text-zinc-800 dark:text-zinc-200 font-bold select-all">adminpassword123</span>
-            </div>
-          </div>
-        </div>
       </div>
     );
   }
