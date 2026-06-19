@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 // Configured from firebase-applet-config.json
 const firebaseConfig = {
@@ -15,8 +15,10 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore specifying our database ID "ai-studio-b7b1c2b6-03a9-46a6-838c-a110d97b8ba8"
-export const db = getFirestore(app, "ai-studio-b7b1c2b6-03a9-46a6-838c-a110d97b8ba8");
+// Initialize Firestore specifying our database ID "ai-studio-b7b1c2b6-03a9-46a6-838c-a110d97b8ba8" and enabling long polling
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+}, "ai-studio-b7b1c2b6-03a9-46a6-838c-a110d97b8ba8");
 
 // Initialize Firebase Authentication
 export const auth = getAuth(app);
