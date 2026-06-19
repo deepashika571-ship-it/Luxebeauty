@@ -1,0 +1,126 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Represents a user's salon account, loyalty information, and preferences.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique Google user authentication ID" },
+        "email": { "type": "string", "description": "Email address of the user" },
+        "fullName": { "type": "string", "description": "Full name" },
+        "phoneNumber": { "type": "string", "description": "Contact phone number" },
+        "country": { "type": "string", "description": "Residential country / location branch preference" },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "Role determining administrative permissions" },
+        "loyaltyPoints": { "type": "integer", "description": "Accumulated makeup styling reward points" },
+        "referralCode": { "type": "string", "description": "Invite code assigned to the user" },
+        "referredBy": { "type": "string", "description": "Referral code of the member who invited them" },
+        "wishlist": { "type": "array", "description": "List of beauty service IDs the user has cataloged" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of account creation" }
+      },
+      "required": ["uid", "email", "fullName", "phoneNumber", "country", "role", "loyaltyPoints", "referralCode", "wishlist", "createdAt"]
+    },
+    "BeautyService": {
+      "title": "BeautyService",
+      "description": "A cataloged luxury aesthetic service or treatment option.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique service catalog ID" },
+        "name": { "type": "string", "description": "Service name" },
+        "category": { "type": "string", "enum": ["Bridal", "Party", "Hair", "Facial", "Skin Care", "Nails", "Mehendi", "Spa"], "description": "Beauty catalog category" },
+        "description": { "type": "string", "description": "Details about the treatment" },
+        "originalPrice": { "type": "number", "description": "Standard service pricing" },
+        "discountPrice": { "type": "number", "description": "Promotional or active rate" },
+        "duration": { "type": "string", "description": "Duration string (e.g. 60 mins)" },
+        "rating": { "type": "number", "description": "Average review score" },
+        "reviewsCount": { "type": "integer", "description": "Total count of review feedback published" },
+        "image": { "type": "string", "description": "Image card URL" },
+        "badge": { "type": "string", "description": "Offered markdown, e.g. 20% OFF" },
+        "isTrending": { "type": "boolean", "description": "Whether labeled as trending" }
+      },
+      "required": ["id", "name", "category", "description", "originalPrice", "discountPrice", "duration", "rating", "reviewsCount", "image"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "An appointment booking made by a customer.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique booking identification code" },
+        "userId": { "type": "string", "description": "User UID who reserved the booking" },
+        "userEmail": { "type": "string", "description": "Customer email" },
+        "userName": { "type": "string", "description": "Customer name" },
+        "userPhone": { "type": "string", "description": "Customer phone" },
+        "serviceId": { "type": "string", "description": "Target treatment ID" },
+        "serviceName": { "type": "string", "description": "Name of booked treatment" },
+        "serviceCategory": { "type": "string", "description": "Treatment category" },
+        "servicePrice": { "type": "number", "description": "Billed transaction value" },
+        "date": { "type": "string", "description": "YYYY-MM-DD format booking date" },
+        "timeSlot": { "type": "string", "description": "Time range selected" },
+        "artist": { "type": "string", "description": "Assigned stylist or aesthetic therapist" },
+        "branch": { "type": "string", "description": "Luxe parlor branch" },
+        "notes": { "type": "string", "description": "Optional customer treatment instructions" },
+        "paymentMethod": { "type": "string", "enum": ["upi", "card", "netbanking", "wallet", "cash"], "description": "Method of payment" },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid", "unpaid"], "description": "Financial verification status" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "completed", "cancelled"], "description": "Activity workflow state" },
+        "invoiceId": { "type": "string", "description": "Generated receipt document invoice serial" },
+        "createdAt": { "type": "string", "description": "Reservation timestamp" }
+      },
+      "required": ["id", "userId", "userEmail", "userName", "userPhone", "serviceId", "serviceName", "serviceCategory", "servicePrice", "date", "timeSlot", "artist", "branch", "paymentMethod", "paymentStatus", "status", "createdAt"]
+    },
+    "OfferDeal": {
+      "title": "OfferDeal",
+      "description": "A coupon code or marketing promotion option.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique offer item code" },
+        "title": { "type": "string", "description": "Offer title" },
+        "description": { "type": "string", "description": "Aesthetic offer details" },
+        "code": { "type": "string", "description": "Promotion coupon code input name" },
+        "discountType": { "type": "string", "enum": ["percentage", "fixed"], "description": "Price deduction rule mode" },
+        "discountValue": { "type": "number", "description": "Numeric magnitude of the reward deduction" },
+        "minOrderAmount": { "type": "number", "description": "Minimum transaction floor" },
+        "expiryDate": { "type": "string", "description": "Expiration schedule" },
+        "category": { "type": "string", "description": "Target treatment category limit, if any" }
+      },
+      "required": ["id", "title", "description", "code", "discountType", "discountValue", "minOrderAmount", "expiryDate"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Styling & facial feedback left by verified clients.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique feedback ID" },
+        "serviceId": { "type": "string", "description": "Linked aesthetic service catalog ID" },
+        "serviceName": { "type": "string", "description": "Title of reviewed service" },
+        "userId": { "type": "string", "description": "Google user authentication ID who made the review" },
+        "userName": { "type": "string", "description": "Reviewer's name" },
+        "rating": { "type": "number", "description": "Feedback score (1 to 5)" },
+        "comment": { "type": "string", "description": "User notes text" },
+        "date": { "type": "string", "description": "Feedback timestamp" },
+        "photoUrl": { "type": "string", "description": "Optional illustration photo" }
+      },
+      "required": ["id", "serviceId", "serviceName", "userId", "userName", "rating", "comment", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Customer profiles, details, roles, and beauty metadata."
+    },
+    "/services/{serviceId}": {
+      "schema": "BeautyService",
+      "description": "Salons active styling treatments catalog."
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Customer reservations and statuses."
+    },
+    "/offers/{offerId}": {
+      "schema": "OfferDeal",
+      "description": "Active promotional codes and rewards options."
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Public reviews and performance logs for hair and skincare therapists."
+    }
+  }
+}

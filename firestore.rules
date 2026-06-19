@@ -1,0 +1,168 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety net default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Check if the user is a designated administrator
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // UserProfile schema verification helper (Anti-Update-Gap)
+    function isValidUserProfile(data) {
+      return data.uid is string && data.uid.size() <= 128 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.fullName is string && data.fullName.size() <= 128 &&
+             data.phoneNumber is string && data.phoneNumber.size() <= 32 &&
+             data.country is string && data.country.size() <= 128 &&
+             data.role in ["user", "admin"] &&
+             data.loyaltyPoints is int && data.loyaltyPoints >= 0 &&
+             data.referralCode is string && data.referralCode.size() <= 64 &&
+             data.wishlist is list && data.wishlist.size() <= 100 &&
+             data.createdAt is string;
+    }
+
+    // BeautyService schema verification helper
+    function isValidBeautyService(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 128 &&
+             data.category in ["Bridal", "Party", "Hair", "Facial", "Skin Care", "Nails", "Mehendi", "Spa"] &&
+             data.description is string && data.description.size() <= 2000 &&
+             data.originalPrice is number && data.originalPrice >= 0 &&
+             data.discountPrice is number && data.discountPrice >= 0 &&
+             data.duration is string && data.duration.size() <= 64 &&
+             data.rating is number && data.rating >= 0 && data.rating <= 5 &&
+             data.reviewsCount is int && data.reviewsCount >= 0 &&
+             data.image is string && data.image.size() <= 1000;
+    }
+
+    // Booking schema verification helper
+    function isValidBooking(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.userEmail is string && data.userEmail.size() <= 256 &&
+             data.userName is string && data.userName.size() <= 128 &&
+             data.userPhone is string && data.userPhone.size() <= 32 &&
+             data.serviceId is string && data.serviceId.size() <= 128 &&
+             data.serviceName is string && data.serviceName.size() <= 128 &&
+             data.serviceCategory is string && data.serviceCategory.size() <= 64 &&
+             data.servicePrice is number && data.servicePrice >= 0 &&
+             data.date is string && data.date.size() <= 32 &&
+             data.timeSlot is string && data.timeSlot.size() <= 64 &&
+             data.artist is string && data.artist.size() <= 128 &&
+             data.branch is string && data.branch.size() <= 128 &&
+             data.paymentMethod in ["upi", "card", "netbanking", "wallet", "cash"] &&
+             data.paymentStatus in ["pending", "paid", "unpaid"] &&
+             data.status in ["pending", "confirmed", "completed", "cancelled"] &&
+             data.createdAt is string;
+    }
+
+    // OfferDeal schema verification helper
+    function isValidOfferDeal(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() <= 128 &&
+             data.description is string && data.description.size() <= 1000 &&
+             data.code is string && data.code.size() <= 64 &&
+             data.discountType in ["percentage", "fixed"] &&
+             data.discountValue is number && data.discountValue >= 0 &&
+             data.minOrderAmount is number && data.minOrderAmount >= 0 &&
+             data.expiryDate is string && data.expiryDate.size() <= 64;
+    }
+
+    // Review schema verification helper
+    function isValidReview(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.serviceId is string && data.serviceId.size() <= 128 &&
+             data.serviceName is string && data.serviceName.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.userName is string && data.userName.size() <= 128 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() <= 2000 &&
+             data.date is string;
+    }
+
+    // Match conditions for UserProfile
+    match /users/{userId} {
+      allow get: if isSignedIn() && (userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (userId == request.auth.uid || isAdmin());
+      
+      allow create: if isSignedIn() && userId == request.auth.uid 
+                     && isValidId(userId) 
+                     && isValidUserProfile(request.resource.data)
+                     // Regular users cannot set their profile as admin on create
+                     && (request.resource.data.role == "user");
+                     
+      allow update: if isSignedIn() && (userId == request.auth.uid || isAdmin())
+                     && (
+                       // Allowed key updates (loyalty points from service purchases, or add beauty wishlist items)
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(["loyaltyPoints", "wishlist"])
+                       || 
+                       // Full updates if authenticated, preventing self-assigned admin promotions
+                       (isValidUserProfile(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin()))
+                     );
+                     
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // Match conditions for BeautyService
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isSignedIn() && isAdmin() && isValidId(serviceId);
+    }
+
+    // Match conditions for Bookings
+    match /bookings/{bookingId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      // Secure list query enforcing query patterns
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      
+      allow create: if isSignedIn() && isValidId(bookingId)
+                     && isValidBooking(request.resource.data)
+                     && request.resource.data.userId == request.auth.uid;
+                     
+      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin())
+                     && (
+                       // Allow updating status or transaction states
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "paymentStatus"])
+                     );
+                     
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // Match conditions for Offers
+    match /offers/{offerId} {
+      allow read: if true;
+      allow write: if isSignedIn() && isAdmin() && isValidId(offerId);
+    }
+
+    // Match conditions for Reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(reviewId)
+                     && isValidReview(request.resource.data)
+                     && request.resource.data.userId == request.auth.uid;
+                     
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+  }
+}
