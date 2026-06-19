@@ -4,12 +4,12 @@ import { initializeFirestore } from "firebase/firestore";
 
 // Configured from firebase-applet-config.json
 const firebaseConfig = {
-  apiKey: "AIzaSyBvoBxw86VmNXIjRbaaZxBMBMNIT98bwyo",
-  authDomain: "ecstatic-magnet-n6tp2.firebaseapp.com",
-  projectId: "ecstatic-magnet-n6tp2",
-  storageBucket: "ecstatic-magnet-n6tp2.firebasestorage.app",
-  messagingSenderId: "756505474648",
-  appId: "1:756505474648:web:3e6c02ed8005d166f23c2d",
+  apiKey: "AIzaSyCAJe-j85HV3xbSoxASxry5WpP3gutlapA",
+  authDomain: "luxa-makeup.firebaseapp.com",
+  projectId: "luxa-makeup",
+  storageBucket: "luxa-makeup.firebasestorage.app",
+  messagingSenderId: "281493379346",
+  appId: "1:281493379346:web:a6c4214def78043ee8bbcb"
 };
 
 // Initialize Firebase
