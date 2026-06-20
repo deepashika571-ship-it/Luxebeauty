@@ -50,6 +50,9 @@ export interface Booking {
   paymentStatus: PaymentStatus;
   status: BookingStatus;
   invoiceId?: string;
+  checkoutDate?: string;
+  paymentTxCode?: string;
+  paymentDetails?: any;
   createdAt: string;
 }
 

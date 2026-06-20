@@ -86,16 +86,8 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
     const utrCode = Math.floor(100000000000 + Math.random() * 900000000000).toString();
 
     // Determine success path
-    const isSuccess = paymentMethod !== "upi" || simulateStatus === "success";
-
-    const updatedBooking: Booking = {
-      ...booking,
-      paymentMethod,
-      paymentStatus: paymentMethod === "cash" ? "pending" : (isSuccess ? "paid" : "unpaid"),
-      status: isSuccess ? "confirmed" : "pending",
-      invoiceId,
-      servicePrice: finalTotal,
-    };
+    const isSuccess = true;
+    const nowIso = new Date().toISOString();
 
     const upiUsed = paymentMethod === "upi" ? (upiPhone || "9342956011@axl") : "";
 
@@ -112,12 +104,24 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
       paymentMethod,
       upiIdUsed: upiUsed,
       merchantUpiId: "9342956011@axl", // PhonePe UPI ID
-      status: isSuccess ? "paid" : "failed",
-      refundStatus: isSuccess ? "none" : "pending",
+      status: "paid",
+      refundStatus: "none",
       refundWindowDays: 2,
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso,
       transactionRef: utrCode,
       emailSent: false,
+    };
+
+    const updatedBooking: Booking = {
+      ...booking,
+      paymentMethod,
+      paymentStatus: paymentMethod === "cash" ? "pending" : "paid",
+      status: "confirmed",
+      invoiceId,
+      checkoutDate: nowIso,
+      paymentTxCode: txId,
+      paymentDetails: tx,
+      servicePrice: finalTotal,
     };
 
     try {
