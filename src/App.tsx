@@ -113,6 +113,10 @@ export default function App() {
   const [otpTimer, setOtpTimer] = useState(60);
   const [otpInputData, setOtpInputData] = useState<UserProfile | null>(null);
 
+  // Booking request success notification popup
+  const [showBookingSuccessModal, setShowBookingSuccessModal] = useState(false);
+  const [successBookingRef, setSuccessBookingRef] = useState<any | null>(null);
+
   // Business state synchronizations
   const [services, setServices] = useState<BeautyService[]>(DEFAULT_SERVICES);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -146,6 +150,61 @@ export default function App() {
 
   // Sync Firebase Remote Config (Dynamic Branding Banner)
   const [siteConfig, setSiteConfig] = useState<{ banner: string }>({ banner: "Welcome!" });
+
+  // Geolocation real-time states
+  const [liveLocation, setLiveLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [liveAddress, setLiveAddress] = useState<string | null>(null);
+  const [liveLocLoading, setLiveLocLoading] = useState(false);
+  const [liveLocError, setLiveLocError] = useState<string | null>(null);
+
+  const fetchLiveLocation = () => {
+    if (!navigator.geolocation) {
+      setLiveLocError("Geolocation not supported");
+      return;
+    }
+    setLiveLocLoading(true);
+    setLiveLocError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setLiveLocation({ lat, lng });
+        
+        try {
+          // Live OpenStreetMap Nominatim reverse lookup
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`, {
+            headers: {
+              "Accept-Language": "en",
+              "User-Agent": "LuxeBeautyBooking/1.0"
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            const displayName = data.display_name || `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
+            setLiveAddress(displayName);
+          } else {
+            setLiveAddress(`${lat.toFixed(4)}°, ${lng.toFixed(4)}°`);
+          }
+        } catch (err) {
+          console.error("Error reverse geocoding:", err);
+          setLiveAddress(`${lat.toFixed(4)}°, ${lng.toFixed(4)}°`);
+        } finally {
+          setLiveLocLoading(false);
+        }
+      },
+      (error) => {
+        console.warn("Geolocation permission/retrieval error:", error);
+        setLiveLocError(error.message || "Position unavailable");
+        setLiveLocLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    );
+  };
+
+  useEffect(() => {
+    // Attempt real-time location access on mount
+    fetchLiveLocation();
+  }, []);
 
   useEffect(() => {
     const fetchRemoteSiteConfig = async () => {
@@ -545,11 +604,15 @@ export default function App() {
         `Your beauty treatment request for ${targetBooking.serviceName} has been submitted! Waiting for Salon Administrator to confirm.`,
         "success"
       );
+      setSuccessBookingRef(targetBooking);
+      setShowBookingSuccessModal(true);
       setCurrentView("dashboard");
     } catch (err) {
       console.warn("Saving requested booking locally due to firestore status: ", err);
       setBookings((prev) => [targetBooking, ...prev]);
-      addNotification("Draft Request Saved", "Booking saved in current offline window.", "info");
+      addNotification("Offline Booking Saved", "Booking saved to your offline aesthetic file.", "info");
+      setSuccessBookingRef(targetBooking);
+      setShowBookingSuccessModal(true);
       setCurrentView("dashboard");
     }
   };
@@ -1312,7 +1375,7 @@ export default function App() {
             </div>
             <div>
               <h4 className="font-serif text-lg font-bold">Secure OTP Verification</h4>
-              <p className="text-xs text-natural-muted mt-1">An authentication code was simulated via SMS to register: {regPhone || "+91 98765 43210"}</p>
+              <p className="text-xs text-natural-muted mt-1">An authentication code was simulated via SMS to register: {regPhone || "+91 9342956011"}</p>
             </div>
             
             <div className="space-y-3">
@@ -1354,6 +1417,58 @@ export default function App() {
         </div>
       )}
 
+      {/* BOOKING REQUEST SUCCESS CONFIRMATION MODAL */}
+      {showBookingSuccessModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white dark:bg-zinc-900 border border-natural-border rounded-3xl p-8 max-w-md w-full text-center space-y-5 shadow-2xl text-[#4A3F3B] dark:text-zinc-100 font-sans">
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 p-4 rounded-full max-w-max mx-auto border border-emerald-150 dark:border-emerald-900/40">
+              <CheckCircle className="w-8 h-8 animate-bounce" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="font-serif text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">your booking request success</h3>
+              <p className="text-zinc-500 dark:text-zinc-400 text-xs italic">
+                {successBookingRef ? `Reservation ID: ${successBookingRef.id}` : "Luxe Booking"}
+              </p>
+            </div>
+
+            <div className="bg-natural-bg dark:bg-zinc-850 p-4 rounded-2xl border border-natural-border text-center">
+              <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                please waiting for confirmation until adminer conform your booking
+              </p>
+            </div>
+
+            {successBookingRef && (
+              <div className="text-left text-xs bg-zinc-50 dark:bg-zinc-950/30 p-3.5 rounded-xl space-y-1.5 border border-gray-150 dark:border-zinc-800">
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Treatment:</span>
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">{successBookingRef.serviceName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Date & Time:</span>
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">{successBookingRef.date} @ {successBookingRef.timeSlot}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Artist Assigned:</span>
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">{successBookingRef.artist}</span>
+                </div>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowBookingSuccessModal(false);
+                setSuccessBookingRef(null);
+              }}
+              className="w-full bg-[#4A3F3B] hover:bg-[#3D3330] dark:bg-amber-500 dark:hover:bg-amber-600 text-white dark:text-zinc-950 font-bold text-xs tracking-widest uppercase py-3.5 rounded-xl cursor-pointer shadow-md transition-all active:scale-98"
+            >
+              Okay, Understood
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* FOOTER SECTION */}
       <footer className="bg-neutral-900 text-zinc-400 pt-16 pb-8 border-t border-zinc-800">
         <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-12">
@@ -1390,10 +1505,10 @@ export default function App() {
             <div className="space-y-3 text-xs leading-relaxed">
               <h5 className="font-serif text-sm font-bold text-white uppercase">Contact & Support</h5>
               <p>Owner: <strong>Grand Cosmologist Aditii Roy</strong></p>
-              <p>Email: <strong>support@luxebeauty.booking</strong></p>
-              <p>Contact No: <strong>+91 98765 43210</strong></p>
+              <p>Email: <strong>abishek9342956011@gmail.com</strong></p>
+              <p>Contact No: <strong>+91 9342956011</strong></p>
               <a
-                href="https://wa.me/919876543210"
+                href="https://wa.me/919342956011"
                 target="_blank"
                 referrerPolicy="no-referrer"
                 className="inline-flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white font-bold text-[9px] uppercase tracking-wider px-3.5 py-1.5 rounded-lg mt-2 cursor-pointer transition-all"
@@ -1404,7 +1519,16 @@ export default function App() {
 
             {/* Interactive map coordinates details */}
             <div id="map-section" className="space-y-3 text-xs">
-              <h5 className="font-serif text-sm font-bold text-white uppercase">Our Flagship Location</h5>
+              <div className="flex justify-between items-center">
+                <h5 className="font-serif text-sm font-bold text-white uppercase">Our Flagship Location</h5>
+                <button 
+                  onClick={fetchLiveLocation}
+                  disabled={liveLocLoading}
+                  className="text-[9px] uppercase tracking-wider text-natural-gold hover:text-white transition-colors flex items-center gap-1 cursor-pointer bg-zinc-800 px-2 py-0.5 rounded-md border border-zinc-700 active:scale-95"
+                >
+                  {liveLocLoading ? "Detecting..." : "📍 Real-time"}
+                </button>
+              </div>
               
               {/* Simulated Map */}
               <div className="w-full h-32 bg-zinc-800 rounded-2xl flex items-center justify-center relative overflow-hidden border border-zinc-700">
@@ -1415,15 +1539,35 @@ export default function App() {
                   <div className="absolute left-1/2 top-0 w-[1px] h-full bg-sky-200"></div>
                   <div className="absolute left-3/4 top-0 w-[1px] h-full bg-sky-200"></div>
                 </div>
-                <div className="text-center relative z-10 space-y-1">
+                <div className="text-center relative z-10 px-4 space-y-1">
                   <MapPin className="w-6 h-6 text-natural-gold mx-auto animate-bounce" />
-                  <span className="font-mono text-[9px] text-gray-300 font-extrabold uppercase">ELEGANT BOULEVARD, MUMBAI</span>
+                  <span className="font-mono text-[9px] text-gray-300 font-extrabold uppercase block truncate max-w-full">
+                    {liveAddress ? "YOUR CURRENT REAL-TIME BEACON" : "ELEGANT BOULEVARD, MUMBAI"}
+                  </span>
+                  {liveLocation && (
+                    <span className="font-mono text-[8px] text-sky-300 block">
+                      Coords: {liveLocation.lat.toFixed(5)}°, {liveLocation.lng.toFixed(5)}°
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <p className="text-[10px] leading-snug">
-                77 Elegant Blvd, Mumbai (opposite Elite Galleria, next to Emerald Lane).
-              </p>
+              <div className="text-[10px] leading-snug space-y-1">
+                {liveAddress ? (
+                  <p className="text-emerald-400 font-medium">
+                    📍 Centered near: <span className="text-zinc-300 italic">{liveAddress}</span>
+                  </p>
+                ) : (
+                  <p className="text-zinc-400">
+                    77 Elegant Blvd, Mumbai (opposite Elite Galleria, next to Emerald Lane).
+                  </p>
+                )}
+                {liveLocError && (
+                  <p className="text-[9px] text-rose-400">
+                    ⚠️ {liveLocError}. (Please allow location permission in your browser/iframe).
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 

@@ -215,6 +215,9 @@ export default function UserProfileDashboard({
 
   const upcomingBookings = bookings.filter(b => b.status === "confirmed" || b.status === "pending");
   const pastBookings = bookings.filter(b => b.status === "completed" || b.status === "cancelled");
+  const allBookingsOrdered = [...bookings].sort((a, b) => {
+    return new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime();
+  });
 
   // Sum total loyalty points
   const loyaltyPoints = userProfile?.loyaltyPoints || (bookings.length * 100) || 200;  return (
@@ -357,28 +360,35 @@ export default function UserProfileDashboard({
             <div className="space-y-6">
               <div>
                 <h4 className="font-serif text-lg font-medium text-zinc-900 dark:text-zinc-100">Scheduled Beauty Journeys</h4>
-                <p className="text-xs text-zinc-500">Track and manage your upcoming treatment sessions and download invoices.</p>
+                <p className="text-xs text-zinc-500">Track and manage your luxury beauty sessions, payments and invoice statuses.</p>
               </div>
 
-              {upcomingBookings.length === 0 ? (
+              {allBookingsOrdered.length === 0 ? (
                 <div className="border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 text-center text-zinc-500 text-xs">
                   <Calendar className="w-8 h-8 text-natural-gold mx-auto mb-2" />
-                  <p>You have no upcoming makeup appointments scheduled.</p>
+                  <p>You have no makeup or styling appointments scheduled.</p>
                   <p className="mt-1 text-[11px] text-zinc-400">Claim your 20% newcomer discount on facials to start!</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {upcomingBookings.map((b) => (
+                  {allBookingsOrdered.map((b) => (
                     <div key={b.id} className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <h5 className="font-bold text-xs text-zinc-900 dark:text-white">{b.serviceName}</h5>
-                          <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                          <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
                             b.status === "confirmed" 
-                              ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 border border-emerald-200/30" 
-                              : "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border border-amber-200/30"
+                              ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 border-emerald-200/30" 
+                              : b.status === "pending"
+                              ? "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border-amber-200/30"
+                              : b.status === "completed"
+                              ? "bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400 border-blue-200/30"
+                              : "bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-400 border-rose-200/30"
                           }`}>
-                            {b.status === "confirmed" ? "Approved by Admin" : "Awaiting Confirmation"}
+                            {b.status === "confirmed" && "Approved by Admin"}
+                            {b.status === "pending" && "Awaiting Confirmation"}
+                            {b.status === "completed" && "Completed Journey"}
+                            {b.status === "cancelled" && "Cancelled Journey"}
                           </span>
                         </div>
                         <p className="text-[11px] text-zinc-500">Date: <strong className="text-zinc-700 dark:text-zinc-350">{b.date}</strong> • Slot: <strong className="text-zinc-700 dark:text-zinc-350">{b.timeSlot}</strong></p>
@@ -387,7 +397,7 @@ export default function UserProfileDashboard({
                       
                       <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start w-full md:w-auto gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-zinc-100 dark:border-zinc-700">
                         <div className="text-left md:text-right">
-                          <p className="text-sm font-bold font-mono text-rose-500 dark:text-rose-400">₹{b.servicePrice}</p>
+                          <p className="text-sm font-bold font-mono text-rose-500 dark:text-rose-400 font-bold">₹{b.servicePrice}</p>
                           <span className={`text-[9px] uppercase font-bold tracking-wider ${
                             b.paymentStatus === "paid" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
                           }`}>
@@ -412,24 +422,6 @@ export default function UserProfileDashboard({
                       </div>
                     </div>
                   ))}
-                </div>
-              )}
-
-              {/* Past bookings */}
-              {pastBookings.length > 0 && (
-                <div>
-                  <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500 mb-2">Previous Visits</h5>
-                  <div className="space-y-2">
-                    {pastBookings.map((b) => (
-                      <div key={b.id} className="border border-zinc-100 dark:border-zinc-850 p-3 rounded-lg flex justify-between items-center text-xs">
-                        <div>
-                          <p className="font-semibold">{b.serviceName}</p>
-                          <p className="text-[10px] text-zinc-400">Date: {b.date} • Therapist: {b.artist}</p>
-                        </div>
-                        <span className="text-[10px] text-gray-505 font-bold">₹{b.servicePrice}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
             </div>
@@ -661,7 +653,7 @@ export default function UserProfileDashboard({
                   </div>
                   <div>
                     <label className="block font-bold text-zinc-500 mb-1 uppercase tracking-wider">Phone Number</label>
-                    <input type="tel" readOnly value={userProfile?.phoneNumber || "+91 98765 43210"} className="w-full bg-zinc-50 dark:bg-zinc-850 border border-gray-200 dark:border-zinc-800 rounded-lg p-2" />
+                    <input type="tel" readOnly value={userProfile?.phoneNumber || "+91 9342956011"} className="w-full bg-zinc-50 dark:bg-zinc-850 border border-gray-200 dark:border-zinc-800 rounded-lg p-2" />
                   </div>
                   <div>
                     <label className="block font-bold text-zinc-500 mb-1 uppercase tracking-wider">Country</label>

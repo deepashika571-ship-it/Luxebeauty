@@ -75,7 +75,7 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
       userId: currentUser.uid,
       userEmail: currentUser.email,
       userName: currentUser.displayName || "Luxe Member",
-      userPhone: currentUser.phoneNumber || "+91 98765 43210",
+      userPhone: currentUser.phoneNumber || "+91 9342956011",
       serviceId: selectedService.id,
       serviceName: selectedService.name,
       serviceCategory: selectedService.category,

@@ -1,6 +1,6 @@
 {
   "name": "LuxeBeauty Booking",
   "description": "An elegant, luxurious booking platform for premium beauty and makeup services, featuring an AI beauty recommender, customized user dashboard, live chat assistant, and secure payment and checkout workflows.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

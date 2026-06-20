@@ -253,7 +253,7 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
               <h4 className="font-serif text-xl tracking-wider text-pink-600 font-bold">LuxeBeauty Lounge</h4>
               <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Flagship Salon & Spa Suite</p>
               <p className="text-xs text-zinc-500 mt-1">77 Elegant Blvd, Mumbai</p>
-              <p className="text-xs text-zinc-500">support@luxebeauty.booking</p>
+              <p className="text-xs text-zinc-500">abishek9342956011@gmail.com</p>
             </div>
             <div className="text-right">
               <span className="inline-block bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded">
