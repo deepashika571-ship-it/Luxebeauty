@@ -28,6 +28,7 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
   const [dragProgress, setDragProgress] = useState(0);
   const [isSwiped, setIsSwiped] = useState(false);
   const [sliderKey, setSliderKey] = useState(0);
+  const [isBookingSuccess, setIsBookingSuccess] = useState(false);
 
   useEffect(() => {
     const calcWidth = () => {
@@ -78,7 +79,7 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
     setIsVerifyingSlots(false);
   };
 
-  const proceedWithBooking = (): boolean => {
+  const validateFields = (): boolean => {
     setValidationError("");
 
     if (!currentUser) {
@@ -90,13 +91,16 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
       setValidationError("Please select a preferred date for your styling treatment.");
       return false;
     }
+    return true;
+  };
 
-    // Pass data back upward to show checkout gateway
+  const proceedWithBooking = (): boolean => {
+    // Pass data back upward to show checkout gateway/store in Firestore
     onSubmit({
-      userId: currentUser.uid,
-      userEmail: currentUser.email,
-      userName: currentUser.displayName || "Luxe Member",
-      userPhone: currentUser.phoneNumber || "+91 9342956011",
+      userId: currentUser!.uid,
+      userEmail: currentUser!.email,
+      userName: currentUser!.displayName || "Luxe Member",
+      userPhone: currentUser!.phoneNumber || "+91 9342956011",
       serviceId: selectedService.id,
       serviceName: selectedService.name,
       serviceCategory: selectedService.category,
@@ -115,17 +119,28 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
     return true;
   };
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const success = proceedWithBooking();
-    if (success) {
-      setIsSwiped(true);
-      setDragProgress(100);
-    } else {
+  const executeCompletedSwipe = () => {
+    if (!validateFields()) {
       setIsSwiped(false);
       setDragProgress(0);
       setSliderKey(prev => prev + 1);
+      return;
     }
+
+    // Show 'booking success' immediately
+    setIsSwiped(true);
+    setDragProgress(100);
+    setIsBookingSuccess(true);
+
+    // After 1400ms delay, store data in firebase by calling proceedWithBooking
+    setTimeout(() => {
+      proceedWithBooking();
+    }, 1400);
+  };
+
+  const handleBookingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    executeCompletedSwipe();
   };
 
   return (
@@ -289,7 +304,7 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
         </div>
 
         {/* Luxe Slide to Proceed confirmation */}
-        <div className="space-y-2 mt-4">
+        <div className="space-y-3 mt-5">
           <label className="block text-[11px] font-semibold uppercase tracking-widest text-[#4A3F3B] dark:text-zinc-400 text-center">
             Booking authorization trigger
           </label>
@@ -300,38 +315,52 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
               // Only trigger if click is on the track/text, not the knob
               if (e.target === e.currentTarget || (e.target as HTMLElement).parentElement === e.currentTarget) {
                 if (isSwiped) return;
-                setIsSwiped(true);
-                setDragProgress(100);
-                const success = proceedWithBooking();
-                if (!success) {
-                  setTimeout(() => {
-                    setIsSwiped(false);
-                    setDragProgress(0);
-                    setSliderKey(prev => prev + 1);
-                  }, 1200);
-                }
+                executeCompletedSwipe();
               }
             }}
-            className="relative w-full h-14 bg-zinc-100 dark:bg-zinc-800/80 rounded-2xl border border-zinc-200 dark:border-zinc-700/60 overflow-hidden flex items-center select-none cursor-pointer group shadow-inner"
+            className={`relative w-full h-14 rounded-2xl border overflow-hidden flex items-center select-none cursor-pointer group shadow-inner transition-all duration-300 ${
+              isBookingSuccess 
+                ? "bg-emerald-600 dark:bg-emerald-950/80 border-emerald-500 shadow-emerald-950/40" 
+                : "bg-zinc-100 dark:bg-zinc-800/80 border-zinc-200 dark:border-zinc-700/60"
+            }`}
           >
             {/* Slide active color trace fill */}
             <div 
-              className="absolute left-0 top-0 h-full bg-gradient-to-r from-natural-gold/15 to-[#4A3F3B]/30 dark:from-natural-gold/10 dark:to-natural-gold/20 rounded-l-2xl pointer-events-none transition-all duration-300"
-              style={{ width: `${Math.max(56, (dragProgress / 100) * (dragWidth + 56))}px` }}
+              className={`absolute left-0 top-0 h-full transition-all duration-300 rounded-l-2xl pointer-events-none ${
+                isBookingSuccess
+                  ? "bg-emerald-500/70"
+                  : "bg-gradient-to-r from-natural-gold/15 to-[#4A3F3B]/30 dark:from-natural-gold/10 dark:to-natural-gold/20"
+              }`}
+              style={{ width: isBookingSuccess ? "100%" : `${Math.max(56, (dragProgress / 100) * (dragWidth + 56))}px` }}
             />
 
             {/* Slider hint text */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-[11px] font-bold tracking-widest text-[#4A3F3B]/80 dark:text-zinc-300/90 uppercase font-sans select-none">
-              <span className="flex items-center gap-1.5 px-12 text-center leading-tight">
-                {isSwiped ? "Authorizing reservation..." : `Slide arrow to proceed (₹${selectedService.discountPrice})`}
-                {!isSwiped && <ChevronsRight className="w-3.5 h-3.5 text-natural-gold animate-pulse shrink-0" />}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-[11px] font-bold tracking-widest uppercase font-sans select-none z-10">
+              <span className={`flex items-center gap-1.5 px-12 text-center leading-tight transition-colors duration-300 ${
+                isBookingSuccess 
+                  ? "text-white animate-pulse" 
+                  : "text-[#4A3F3B]/80 dark:text-zinc-300/90"
+              }`}>
+                {isBookingSuccess ? (
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-300 animate-bounce" />
+                    booking success
+                  </span>
+                ) : isSwiped ? (
+                  "Authorizing reservation..."
+                ) : (
+                  <>
+                    Slide arrow to proceed (₹{selectedService.discountPrice})
+                    <ChevronsRight className="w-3.5 h-3.5 text-natural-gold animate-pulse shrink-0" />
+                  </>
+                )}
               </span>
             </div>
 
             {/* Draggable Knob */}
             <motion.div
               key={sliderKey}
-              drag="x"
+              drag={isBookingSuccess ? false : "x"}
               dragConstraints={{ left: 0, right: dragWidth }}
               dragElastic={0.08}
               dragMomentum={false}
@@ -342,26 +371,25 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
               }}
               onDragEnd={(event, info) => {
                 if (info.offset.x >= dragWidth - 15) {
-                  setIsSwiped(true);
-                  setDragProgress(100);
-                  const success = proceedWithBooking();
-                  if (!success) {
-                    setTimeout(() => {
-                      setIsSwiped(false);
-                      setDragProgress(0);
-                      setSliderKey(prev => prev + 1);
-                    }, 1200);
-                  }
+                  executeCompletedSwipe();
                 } else {
                   // Snap back
                   setDragProgress(0);
                 }
               }}
-              className="absolute left-1 w-12 h-12 rounded-xl bg-[#4A3F3B] dark:bg-zinc-700 hover:bg-[#3D3330] dark:hover:bg-zinc-650 flex items-center justify-center text-white cursor-grab active:cursor-grabbing shadow-lg border border-natural-gold/40 z-10"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              className={`absolute left-1 w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg border z-20 transition-all duration-300 ${
+                isBookingSuccess
+                  ? "bg-emerald-500 border-white cursor-default"
+                  : "bg-[#4A3F3B] dark:bg-zinc-700 hover:bg-[#3D3330] dark:hover:bg-zinc-650 cursor-grab active:cursor-grabbing border-natural-gold/40"
+              }`}
+              whileHover={isBookingSuccess ? {} : { scale: 1.05 }}
+              whileTap={isBookingSuccess ? {} : { scale: 0.95 }}
             >
-              <ArrowRight className="w-5 h-5 text-natural-gold group-hover:translate-x-0.5 transition-transform" />
+              {isBookingSuccess ? (
+                <CheckCircle className="w-5 h-5 text-white" />
+              ) : (
+                <ArrowRight className="w-5 h-5 text-natural-gold group-hover:translate-x-0.5 transition-transform" />
+              )}
             </motion.div>
           </div>
           
