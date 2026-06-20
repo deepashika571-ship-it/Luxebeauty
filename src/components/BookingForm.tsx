@@ -255,7 +255,7 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
           type="submit"
           className="w-full bg-[#4A3F3B] hover:bg-[#3D3330] text-white font-bold tracking-widest text-xs uppercase px-6 py-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 focus:outline-none cursor-pointer border border-natural-gold/15"
         >
-          Proceed to Secure Checkout Gateway (₹{selectedService.discountPrice})
+          Proceed Booking Request (₹{selectedService.discountPrice})
         </button>
       </form>
     </div>

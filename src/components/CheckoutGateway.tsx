@@ -358,51 +358,26 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
             <h4 className="font-serif text-xl font-medium tracking-wide mb-1">Select Payment Venue</h4>
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400">All transactions are processed through 256-bit secure gateway.</p>
           </div>
-
-          {/* Payment Method Icons */}
+                {/* Payment Method Icons - Restricted to UPI App and Pay at Salon only */}
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setPaymentMethod("upi")}
-              className={`flex items-center gap-2.5 p-3.5 rounded-xl border-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-2.5 p-3.5 rounded-xl border-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                 paymentMethod === "upi"
-                  ? "border-pink-500 bg-pink-50/50 dark:bg-rose-950/20 text-pink-600 dark:text-rose-450"
+                  ? "border-pink-500 bg-pink-50/50 dark:bg-[#2F2120] text-pink-600 dark:text-rose-450"
                   : "border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 text-gray-600 dark:text-gray-300"
               }`}
             >
               <Smartphone className="w-4 h-4 shrink-0 text-pink-500" />
-              UPI App
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaymentMethod("card")}
-              className={`flex items-center gap-2.5 p-3.5 rounded-xl border-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                paymentMethod === "card"
-                  ? "border-pink-500 bg-pink-50/50 dark:bg-rose-950/20 text-pink-600 dark:text-rose-450"
-                  : "border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 text-gray-600 dark:text-gray-300"
-              }`}
-            >
-              <CreditCard className="w-4 h-4 shrink-0 text-amber-500" />
-              Debit / Credit
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaymentMethod("netbanking")}
-              className={`flex items-center gap-2.5 p-3.5 rounded-xl border-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                paymentMethod === "netbanking"
-                  ? "border-pink-500 bg-pink-50/50 dark:bg-rose-950/20 text-pink-600 dark:text-rose-450"
-                  : "border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 text-gray-600 dark:text-gray-300"
-              }`}
-            >
-              <Landmark className="w-4 h-4 shrink-0 text-blue-500" />
-              NetBanking
+              UPI App Instant
             </button>
             <button
               type="button"
               onClick={() => setPaymentMethod("cash")}
-              className={`flex items-center gap-2.5 p-3.5 rounded-xl border-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-2.5 p-3.5 rounded-xl border-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                 paymentMethod === "cash"
-                  ? "border-pink-500 bg-pink-50/50 dark:bg-rose-950/20 text-pink-600 dark:text-rose-450"
+                  ? "border-emerald-500 bg-emerald-50/20 dark:bg-[#1E2D27] text-emerald-600 dark:text-emerald-400"
                   : "border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 text-gray-600 dark:text-gray-300"
               }`}
             >
@@ -443,15 +418,15 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
                   className="w-36 h-36 p-1.5 border border-zinc-150 rounded-lg animate-fade-in"
                   referrerPolicy="no-referrer"
                 />
-                <span className="text-[9px] text-[#4A3F3B] dark:text-zinc-350 font-extrabold tracking-widest mt-2 uppercase font-mono">Scan via PhonePe, GPay, or Paytm</span>
-                <p className="text-[9px] text-zinc-400 max-w-[210px] leading-normal mt-0.5">Scans will prep payout of ₹{finalTotal} straight to Aura Luxe Studio account.</p>
+                <span className="text-[10px] text-[#4A3F3B] dark:text-zinc-300 font-extrabold tracking-widest mt-2.5 uppercase font-mono">Scan via PhonePe, GPay, or Paytm</span>
+                <p className="text-[10px] text-zinc-400 max-w-[210px] leading-normal mt-0.5">Directly connected to Indian banking network. Real-time authorization setup.</p>
 
                 {/* Direct Mobile launch deep-link */}
                 <a
                   href={`upi://pay?pa=9342956011@axl&pn=Aura%2520Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBooking_${booking.id}`}
-                  className="w-full text-center bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-900 text-white font-bold py-2 px-3 rounded-xl text-[10px] uppercase font-mono tracking-wider transition-colors mt-3"
+                  className="w-full text-center bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-900 text-white font-bold py-2.5 px-3 rounded-xl text-[10px] uppercase font-mono tracking-wider transition-colors mt-3"
                 >
-                  ⚡ Direct mobile launch deep link
+                  ⚡ Launch respective UPI app on this device
                 </a>
               </div>
 
@@ -466,113 +441,41 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
                   onChange={(e) => setUpiPhone(e.target.value)}
                   className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-xs outline-none focus:border-amber-400 font-mono text-zinc-800 dark:text-zinc-200"
                 />
-                <p className="text-[10px] text-zinc-400 leading-normal">Required so that salon operators can credit exact refunds back to your UPI account within 2 days in case transaction fails.</p>
               </div>
-
-              {/* Simulation selector tool to fulfill requirements */}
-              <div className="bg-amber-50/20 dark:bg-[#201D1A] border border-dashed border-amber-300/60 p-4 rounded-xl space-y-2 text-xs">
-                <span className="block font-bold text-amber-900 dark:text-amber-300 text-[10px] uppercase tracking-wider">UPI Authorization Sandbox</span>
-                <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Our preview environment lets you test the full success path or simulate failed transactions with refund guarantees.</p>
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setSimulateStatus("success")}
-                    className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border text-[10px] font-bold uppercase transition-all cursor-pointer ${
-                      simulateStatus === "success"
-                        ? "bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400"
-                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-650"
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    Simulate Success
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSimulateStatus("failed")}
-                    className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border text-[10px] font-bold uppercase transition-all cursor-pointer ${
-                      simulateStatus === "failed"
-                        ? "bg-rose-500/10 border-rose-500 text-rose-600 dark:text-rose-400"
-                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-650"
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                    Simulate Failure
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {paymentMethod === "card" && (
-            <div className="space-y-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-750">
-              <div className="space-y-1">
-                <label className="block text-xs font-semibold uppercase text-zinc-500 tracking-wider">Cardholder Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Full Name Listed on Card"
-                  value={cardHolder}
-                  onChange={(e) => setCardHolder(e.target.value)}
-                  className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-pink-400"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="block text-xs font-semibold uppercase text-zinc-500 tracking-wider">Card Number</label>
-                <input
-                  type="text"
-                  required
-                  maxLength={19}
-                  placeholder="4111 2222 3333 4444"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value.replace(/\s?/g, '').replace(/(\d{4})/g, '$1 ').trim())}
-                  className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-pink-400 font-mono"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold uppercase text-zinc-500 tracking-wider">Expiry (MM/YY)</label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={5}
-                    placeholder="12/28"
-                    value={cardExpiry}
-                    onChange={(e) => setCardExpiry(e.target.value)}
-                    className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-pink-400 font-mono"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold uppercase text-zinc-500 tracking-wider">CVV Code</label>
-                  <input
-                    type="password"
-                    required
-                    maxLength={3}
-                    placeholder="345"
-                    value={cardCVV}
-                    onChange={(e) => setCardCVV(e.target.value.replace(/\D/g, ''))}
-                    className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-pink-400 font-mono"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {paymentMethod === "netbanking" && (
-            <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-750">
-              <label className="block text-xs font-semibold uppercase text-zinc-500 tracking-wider mb-2">Select Banking Institution</label>
-              <select className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-pink-400">
-                <option>HDFC Luxury Banking Private</option>
-                <option>ICICI Bank Premium Suites</option>
-                <option>State Bank of India Gold</option>
-                <option>Axis Royal Privilege</option>
-              </select>
             </div>
           )}
 
           {paymentMethod === "cash" && (
-            <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-dashed border-emerald-200 dark:border-emerald-900 rounded-2xl p-4 text-xs text-emerald-800 dark:text-emerald-300 leading-relaxed">
-              <p className="font-semibold">Pay at Lounge Option Selected</p>
-              No payment is required right now. Double click below to confirm your booking and secure the time slot. Standard cash, card, and UPI terminal available when checking out at the salon lobby.
+            <div className="bg-zinc-50 dark:bg-zinc-805 border border-zinc-250 dark:border-zinc-800/60 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center gap-2 text-rose-500">
+                <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+                <h5 className="font-bold text-xs uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Pay at Salon (Pre-Scan Setup Connected)</h5>
+              </div>
+              <p className="text-xs text-zinc-600 dark:text-zinc-350 leading-relaxed">
+                Thank you! You can double-click below to secure this slot request and confirm your scheduled specialist visit. 
+                At our lobby reception desk, scan our active UPI scanner which immediately launches your respective payment application to pay ₹{finalTotal}.
+              </p>
+
+              {/* Scanner Block integrated directly for Pay at Salon */}
+              <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-zinc-900 border border-dashed border-emerald-300 dark:border-emerald-800/80 rounded-2xl text-center">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                    `upi://pay?pa=9342956011@axl&pn=Aura%20Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBookingPayAtSalon_${booking.id}`
+                  )}`}
+                  alt="Aura Luxe UPI QR Terminal"
+                  className="w-36 h-36 p-1.5 border border-emerald-200 dark:border-emerald-800 rounded-lg shadow-sm"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="text-[10px] text-emerald-800 dark:text-emerald-400 font-extrabold tracking-widest mt-2 uppercase font-mono">Respective UPI App Instant Connect</span>
+                <p className="text-[9px] text-zinc-400 max-w-[210px] leading-normal mt-0.5">Scans will automatically trigger secure UPI authentication to complete payout of ₹{finalTotal}.</p>
+                
+                <a
+                  href={`upi://pay?pa=9342956011@axl&pn=Aura%2520Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBookingPayAtSalon_${booking.id}`}
+                  className="w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-[10px] uppercase font-mono tracking-wider transition-colors mt-2"
+                >
+                  ⚡ Connect and Launch UPI App
+                </a>
+              </div>
             </div>
           )}
 

@@ -14,6 +14,7 @@ interface UserProfileDashboardProps {
   googleAccessToken?: string | null;
   onConnectGoogle?: () => Promise<void>;
   onAddLoyaltyPoints?: (points: number) => void;
+  onCheckoutBooking?: (booking: Booking) => void;
 }
 
 export default function UserProfileDashboard({
@@ -24,7 +25,8 @@ export default function UserProfileDashboard({
   onLogout,
   googleAccessToken,
   onConnectGoogle,
-  onAddLoyaltyPoints
+  onAddLoyaltyPoints,
+  onCheckoutBooking
 }: UserProfileDashboardProps) {
   const [activeTab, setActiveTab] = useState<"appointments" | "profile" | "wishlist" | "loyalty" | "offers" | "contacts" | "payments">("appointments");
   const [wishlistItems, setWishlistItems] = useState<BeautyService[]>([]);
@@ -367,22 +369,46 @@ export default function UserProfileDashboard({
               ) : (
                 <div className="space-y-4">
                   {upcomingBookings.map((b) => (
-                    <div key={b.id} className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-sm">
-                      <div>
-                        <div className="flex items-center gap-2">
+                    <div key={b.id} className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
                           <h5 className="font-bold text-xs text-zinc-900 dark:text-white">{b.serviceName}</h5>
                           <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-                            b.status === "confirmed" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                            b.status === "confirmed" 
+                              ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 border border-emerald-200/30" 
+                              : "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border border-amber-200/30"
                           }`}>
-                            {b.status}
+                            {b.status === "confirmed" ? "Approved by Admin" : "Awaiting Confirmation"}
                           </span>
                         </div>
-                        <p className="text-[11px] text-zinc-500 mt-1">Date: <strong className="text-zinc-700 dark:text-zinc-350">{b.date}</strong> • Slot: <strong className="text-zinc-700 dark:text-zinc-350">{b.timeSlot}</strong></p>
-                        <p className="text-[11px] text-zinc-500">Artist Assigned: {b.artist} • Branch: {b.branch.split(',')[0]}</p>
+                        <p className="text-[11px] text-zinc-500">Date: <strong className="text-zinc-700 dark:text-zinc-350">{b.date}</strong> • Slot: <strong className="text-zinc-700 dark:text-zinc-350">{b.timeSlot}</strong></p>
+                        <p className="text-[11px] text-zinc-500">Artist: {b.artist} • Lobby: {b.branch.split(',')[0]}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs font-bold font-mono text-zinc-800 dark:text-white">₹{b.servicePrice}</p>
-                        <span className="text-[9px] text-gray-500 uppercase font-bold tracking-widest">{b.paymentStatus === "paid" ? "Paid Secure" : "Pay at Visit"}</span>
+                      
+                      <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start w-full md:w-auto gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-zinc-100 dark:border-zinc-700">
+                        <div className="text-left md:text-right">
+                          <p className="text-sm font-bold font-mono text-rose-500 dark:text-rose-400">₹{b.servicePrice}</p>
+                          <span className={`text-[9px] uppercase font-bold tracking-wider ${
+                            b.paymentStatus === "paid" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+                          }`}>
+                            {b.paymentStatus === "paid" ? "Paid (Authorized)" : "Pending Payment"}
+                          </span>
+                        </div>
+
+                        {b.status === "confirmed" && b.paymentStatus !== "paid" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (onCheckoutBooking) {
+                                onCheckoutBooking(b);
+                              }
+                            }}
+                            className="flex items-center gap-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-extrabold tracking-widest text-[9px] uppercase py-2 px-3 rounded-xl transition-all shadow hover:shadow-md cursor-pointer animate-pulse"
+                          >
+                            <CreditCard className="w-3 h-3" />
+                            Checkout Now
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

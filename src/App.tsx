@@ -320,7 +320,10 @@ export default function App() {
 
   const fetchBookings = async (uid: string) => {
     try {
-      const bksQ = query(collection(db, "bookings"), where("userId", "==", uid));
+      const isAdmin = user && user.email?.toLowerCase().includes("admin");
+      const bksQ = isAdmin
+        ? query(collection(db, "bookings"))
+        : query(collection(db, "bookings"), where("userId", "==", uid));
       const bksSnap = await getDocs(bksQ);
       const loaded: Booking[] = [];
       bksSnap.forEach((doc) => loaded.push({ id: doc.id, ...doc.data() } as Booking));
@@ -522,31 +525,49 @@ export default function App() {
     setCurrentView("home");
   };
 
-  // Appointment scheduling handler
-  const handleBookingDetailsSubmit = (bookingDetails: Omit<Booking, "id" | "createdAt">) => {
+  // Appointment scheduling handler (Saves requested bookings directly to Firebase first)
+  const handleBookingDetailsSubmit = async (bookingDetails: Omit<Booking, "id" | "createdAt">) => {
     const bookingId = `bk_${Date.now()}`;
     const targetBooking: Booking = {
       id: bookingId,
       ...bookingDetails,
+      paymentStatus: "unpaid",
+      status: "pending", // Requested booking status
       createdAt: new Date().toISOString(),
     };
 
-    setPendingBookingData(targetBooking);
-    setCurrentView("checkout");
+    try {
+      // Store requested beauty appointment request in Firebase Firestore
+      await setDoc(doc(db, "bookings", targetBooking.id), targetBooking);
+      setBookings((prev) => [targetBooking, ...prev]);
+      addNotification(
+        "Booking Request Submitted!",
+        `Your beauty treatment request for ${targetBooking.serviceName} has been submitted! Waiting for Salon Administrator to confirm.`,
+        "success"
+      );
+      setCurrentView("dashboard");
+    } catch (err) {
+      console.warn("Saving requested booking locally due to firestore status: ", err);
+      setBookings((prev) => [targetBooking, ...prev]);
+      addNotification("Draft Request Saved", "Booking saved in current offline window.", "info");
+      setCurrentView("dashboard");
+    }
   };
 
-  // Checkout Success triggers database entry
+  // Checkout Success triggers database entry update on paid statuses
   const handlePaymentAuthorizeSuccess = async (method: string, status: string, finalBooking: Booking) => {
     try {
-      // 1. Save Booking in Firestore database
+      // Update/overwrite target booking inside Firebase database on checkout success 
       await setDoc(doc(db, "bookings", finalBooking.id), finalBooking);
       
-      // 2. Add Booking in local state
-      setBookings((prev) => [finalBooking, ...prev]);
+      // Update local state bookings list
+      setBookings((prev) =>
+        prev.map((b) => (b.id === finalBooking.id ? finalBooking : b))
+      );
 
-      // 3. Award Loyalty points (+100 for scheduling)
+      // Award Loyalty points (+150 for completed checkout)
       if (user) {
-        const newPts = loyaltyPoints + 100;
+        const newPts = loyaltyPoints + 150;
         setLoyaltyPoints(newPts);
         if (profile) {
           const updatedProfile = { ...profile, loyaltyPoints: newPts };
@@ -555,15 +576,15 @@ export default function App() {
         }
       }
 
-      addNotification("Booking Confirmed", `Appointment for ${finalBooking.serviceName} scheduled on ${finalBooking.date}`, "success");
-      
-      // 4. Seed dynamic customer list for admin tracking
-      if (profile && !usersList.some(u => u.uid === profile.uid)) {
-        setUsersList(prev => [profile, ...prev]);
-      }
+      addNotification("Invoice Generated Successfully!", `Payment for ${finalBooking.serviceName} verified. Your appointment slot is secured!`, "success");
+      setCurrentView("dashboard");
     } catch (err) {
-      console.warn("Saving offline bookings: ", err);
-      setBookings((prev) => [finalBooking, ...prev]);
+      console.warn("Saving checkout update offline: ", err);
+      setBookings((prev) =>
+        prev.map((b) => (b.id === finalBooking.id ? finalBooking : b))
+      );
+      addNotification("Offline Status Recorded", "Payment saved in local window state.", "info");
+      setCurrentView("dashboard");
     }
   };
 
@@ -1197,6 +1218,10 @@ export default function App() {
               googleAccessToken={googleAccessToken}
               onConnectGoogle={handleConnectGoogle}
               onAddLoyaltyPoints={handleAddLoyaltyPoints}
+              onCheckoutBooking={(booking) => {
+                setPendingBookingData(booking);
+                setCurrentView("checkout");
+              }}
             />
           </div>
         )}
