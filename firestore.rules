@@ -142,11 +142,24 @@ service cloud.firestore {
                      
       allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin())
                      && (
-                       // Allow updating status or transaction states
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "paymentStatus"])
+                       // Allow updating status or transaction/billing states during checkout
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                         "status", "paymentStatus", "paymentMethod", "invoiceId", "checkoutDate", "paymentTxCode", "paymentDetails", "servicePrice"
+                       ])
                      );
                      
       allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // Match conditions for Payments
+    match /payments/{paymentId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      
+      allow create: if isSignedIn() && isValidId(paymentId)
+                     && request.resource.data.userId == request.auth.uid;
+                     
+      allow update, delete: if isSignedIn() && isAdmin();
     }
 
     // Match conditions for Offers

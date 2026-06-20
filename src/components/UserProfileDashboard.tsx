@@ -652,20 +652,20 @@ export default function UserProfileDashboard({
               <div className="space-y-4 max-w-md">
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
-                    <label className="block font-bold text-zinc-500 mb-1">FULL NAME</label>
-                    <input type="text" readOnly value={userProfile?.fullName || "Guest Account"} className="w-full bg-zinc-50 border border-gray-200 rounded-lg p-2" />
+                    <label className="block font-bold text-zinc-500 mb-1 uppercase tracking-wider">Full Name</label>
+                    <input type="text" readOnly value={userProfile?.fullName || "Guest Account"} className="w-full bg-zinc-50 dark:bg-zinc-850 border border-gray-200 dark:border-zinc-800 rounded-lg p-2" />
                   </div>
                   <div>
-                    <label className="block font-bold text-zinc-500 mb-1">EMAIL SUPPORT</label>
-                    <input type="email" readOnly value={userProfile?.email || "guest@luxebeauty.booking"} className="w-full bg-zinc-50 border border-gray-200 rounded-lg p-2" />
+                    <label className="block font-bold text-zinc-500 mb-1 uppercase tracking-wider">Email Address</label>
+                    <input type="email" readOnly value={userProfile?.email || "guest@luxebeauty.booking"} className="w-full bg-zinc-50 dark:bg-zinc-850 border border-gray-200 dark:border-zinc-800 rounded-lg p-2" />
                   </div>
                   <div>
-                    <label className="block font-bold text-zinc-500 mb-1">PHONE CODE</label>
-                    <input type="tel" readOnly value={userProfile?.phoneNumber || "+91 98765 43210"} className="w-full bg-zinc-50 border border-gray-200 rounded-lg p-2" />
+                    <label className="block font-bold text-zinc-500 mb-1 uppercase tracking-wider">Phone Number</label>
+                    <input type="tel" readOnly value={userProfile?.phoneNumber || "+91 98765 43210"} className="w-full bg-zinc-50 dark:bg-zinc-850 border border-gray-200 dark:border-zinc-800 rounded-lg p-2" />
                   </div>
                   <div>
-                    <label className="block font-bold text-zinc-500 mb-1">COUNTRY ORIGIN</label>
-                    <input type="text" readOnly value={userProfile?.country || "India"} className="w-full bg-zinc-50 border border-gray-200 rounded-lg p-2" />
+                    <label className="block font-bold text-zinc-500 mb-1 uppercase tracking-wider">Country</label>
+                    <input type="text" readOnly value={userProfile?.country || "India"} className="w-full bg-zinc-50 dark:bg-zinc-850 border border-gray-200 dark:border-zinc-800 rounded-lg p-2" />
                   </div>
                 </div>
               </div>
