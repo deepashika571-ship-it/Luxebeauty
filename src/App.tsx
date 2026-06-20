@@ -598,6 +598,10 @@ export default function App() {
     try {
       // Store requested beauty appointment request in Firebase Firestore
       await setDoc(doc(db, "bookings", targetBooking.id), targetBooking);
+      // Store in redundant collections for "booking request" and "appointment" requirements
+      await setDoc(doc(db, "booking_requests", targetBooking.id), targetBooking);
+      await setDoc(doc(db, "appointments", targetBooking.id), targetBooking);
+      
       setBookings((prev) => [targetBooking, ...prev]);
       addNotification(
         "Booking Request Submitted!",
@@ -622,6 +626,8 @@ export default function App() {
     try {
       // Update/overwrite target booking inside Firebase database on checkout success 
       await setDoc(doc(db, "bookings", finalBooking.id), finalBooking);
+      await setDoc(doc(db, "booking_requests", finalBooking.id), finalBooking);
+      await setDoc(doc(db, "appointments", finalBooking.id), finalBooking);
       
       // Update local state bookings list
       setBookings((prev) =>
@@ -720,6 +726,12 @@ export default function App() {
   const handleAdminUpdateBooking = async (id: string, status: any) => {
     try {
       await updateDoc(doc(db, "bookings", id), { status });
+      try {
+        await updateDoc(doc(db, "booking_requests", id), { status });
+      } catch (e) {}
+      try {
+        await updateDoc(doc(db, "appointments", id), { status });
+      } catch (e) {}
       setBookings((prev) =>
         prev.map((b) => (b.id === id ? { ...b, status } : b))
       );
@@ -734,6 +746,12 @@ export default function App() {
   const handleAdminDeleteBooking = async (id: string) => {
     try {
       await deleteDoc(doc(db, "bookings", id));
+      try {
+        await deleteDoc(doc(db, "booking_requests", id));
+      } catch (e) {}
+      try {
+        await deleteDoc(doc(db, "appointments", id));
+      } catch (e) {}
       setBookings((prev) => prev.filter((b) => b.id !== id));
       addNotification("Booking Deleted", "An appointment record was removed from database.", "warning");
     } catch (err) {

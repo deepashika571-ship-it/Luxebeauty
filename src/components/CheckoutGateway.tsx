@@ -127,6 +127,7 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
     try {
       // Collect and save payment transaction in Firestore!
       await setDoc(doc(db, "payments", txId), tx);
+      await setDoc(doc(db, "checkout_payments", txId), tx);
     } catch (err) {
       console.warn("Firestore collection update failed:", err);
     }

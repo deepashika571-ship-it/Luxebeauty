@@ -5,22 +5,23 @@ import { getRemoteConfig } from "firebase/remote-config";
 
 // Configured from user-provided firebase details
 const firebaseConfig = {
-  apiKey: "AIzaSyBvoBxw86VmNXIjRbaaZxBMBMNIT98bwyo",
-  authDomain: "ecstatic-magnet-n6tp2.firebaseapp.com",
-  projectId: "ecstatic-magnet-n6tp2",
-  storageBucket: "ecstatic-magnet-n6tp2.firebasestorage.app",
-  messagingSenderId: "756505474648",
-  appId: "1:756505474648:web:3e6c02ed8005d166f23c2d"
+  apiKey: "AIzaSyCAJe-j85HV3xbSoxASxry5WpP3gutlapA",
+  authDomain: "luxa-makeup.firebaseapp.com",
+  databaseURL: "https://luxa-makeup-default-rtdb.firebaseio.com",
+  projectId: "luxa-makeup",
+  storageBucket: "luxa-makeup.firebasestorage.app",
+  messagingSenderId: "281493379346",
+  appId: "1:281493379346:web:a6c4214def78043ee8bbcb"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore specifying our database ID and enabling long polling
+// Initialize Firestore specifying production options and using default database
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
   useFetchStreams: false,
-} as any, "ai-studio-b7b1c2b6-03a9-46a6-838c-a110d97b8ba8");
+} as any);
 
 // Initialize Firebase Authentication
 export const auth = getAuth(app);
