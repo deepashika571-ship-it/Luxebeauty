@@ -35,10 +35,8 @@ import {
 
 import {
   auth,
-  db,
-  remoteConfig
+  db
 } from "./firebase";
-import { fetchAndActivate, getValue } from "firebase/remote-config";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -143,33 +141,6 @@ export default function App() {
 
   // Notification panel bubble
   const [showNotificationCenter, setShowNotificationCenter] = useState(false);
-
-  // Sync Firebase Remote Config (Dynamic Branding Banner)
-  const [siteConfig, setSiteConfig] = useState<{ banner: string }>({ banner: "Welcome!" });
-
-  useEffect(() => {
-    const fetchRemoteSiteConfig = async () => {
-      if (!remoteConfig) {
-        console.warn("Firebase Remote Config instance is not active or supported in this context.");
-        return;
-      }
-      try {
-        await fetchAndActivate(remoteConfig);
-        const configStr = getValue(remoteConfig, "site_config").asString();
-        console.log("Remote Config 'site_config' fetched raw:", configStr);
-        if (configStr) {
-          const configJson = JSON.parse(configStr);
-          if (configJson && typeof configJson === "object" && typeof configJson.banner === "string") {
-            setSiteConfig(configJson);
-            console.log("Remote Config parsed successfully:", configJson);
-          }
-        }
-      } catch (err) {
-        console.warn("Could not retrieve Remote Config values. Falling back to preset defaults:", err);
-      }
-    };
-    fetchRemoteSiteConfig();
-  }, []);
 
   // Sync Auth State from Firebase
   useEffect(() => {
@@ -724,15 +695,6 @@ export default function App() {
 
   return (
     <div className={`${darkMode ? "dark bg-zinc-950 text-amber-50" : "bg-neutral-50 text-zinc-900"} min-h-screen flex flex-col font-sans transition-colors duration-300`}>
-      
-      {/* REMOTE CONFIG BRANDING BANNER (Aura Luxury Aesthetic) */}
-      {siteConfig && siteConfig.banner && (
-        <div id="remote-branding-banner" className="bg-[#4A3F3B] dark:bg-amber-500 text-[#FDF2F0] dark:text-zinc-950 text-center py-2 px-4 text-[11px] font-semibold tracking-widest uppercase flex items-center justify-center gap-2 select-none z-50">
-          <Sparkles className="w-3 h-3 text-amber-300 dark:text-zinc-900 animate-pulse shrink-0" />
-          <span>{siteConfig.banner}</span>
-          <Sparkles className="w-3 h-3 text-amber-300 dark:text-zinc-900 animate-pulse shrink-0" />
-        </div>
-      )}
       
       {/* HEADER SECTION (AURA NATURAL TONES COMPLIANT) */}
       <header className="sticky top-0 z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border-b border-natural-border transition-all">

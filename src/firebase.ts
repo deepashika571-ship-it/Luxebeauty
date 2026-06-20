@@ -1,7 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { initializeFirestore } from "firebase/firestore";
-import { getRemoteConfig } from "firebase/remote-config";
 
 // Configured from firebase-applet-config.json
 const firebaseConfig = {
@@ -23,18 +22,3 @@ export const db = initializeFirestore(app, {
 
 // Initialize Firebase Authentication
 export const auth = getAuth(app);
-
-// Initialize Firebase Remote Config to fetch site management configuration rules
-let remoteConfigInstance: any = null;
-try {
-  if (typeof window !== "undefined") {
-    remoteConfigInstance = getRemoteConfig(app);
-    remoteConfigInstance.defaultConfig = {
-      site_config: '{"banner":"Welcome!"}'
-    };
-  }
-} catch (error) {
-  console.warn("Firebase Remote Config failed to initialize inside sandbox context:", error);
-}
-
-export const remoteConfig = remoteConfigInstance;
