@@ -446,8 +446,15 @@ export default function AdminPanel({
                         <p className="text-[10px] text-zinc-500">{b.userEmail}</p>
                       </td>
                       <td className="p-3">
-                        <p className="font-semibold">{b.serviceName}</p>
-                        <p className="text-[10px] text-natural-gold font-bold">₹{b.servicePrice}</p>
+                        <div className="flex items-center gap-2">
+                          {b.serviceImage && (
+                            <img src={b.serviceImage} alt={b.serviceName} className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-zinc-200 dark:border-zinc-700" referrerPolicy="no-referrer" />
+                          )}
+                          <div>
+                            <p className="font-semibold">{b.serviceName}</p>
+                            <p className="text-[10px] text-natural-gold font-bold">₹{b.servicePrice}</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="p-3">
                         <p className="font-medium">{b.date}</p>

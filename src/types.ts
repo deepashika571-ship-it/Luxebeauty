@@ -54,6 +54,8 @@ export interface Booking {
   paymentTxCode?: string;
   paymentDetails?: any;
   createdAt: string;
+  serviceImage?: string;
+  serviceIcon?: string;
 }
 
 export interface OfferDeal {

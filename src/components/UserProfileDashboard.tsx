@@ -373,26 +373,33 @@ export default function UserProfileDashboard({
                 <div className="space-y-4">
                   {allBookingsOrdered.map((b) => (
                     <div key={b.id} className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h5 className="font-bold text-xs text-zinc-900 dark:text-white">{b.serviceName}</h5>
-                          <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
-                            b.status === "confirmed" 
-                              ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 border-emerald-200/30" 
-                              : b.status === "pending"
-                              ? "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border-amber-200/30"
-                              : b.status === "completed"
-                              ? "bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400 border-blue-200/30"
-                              : "bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-400 border-rose-200/30"
-                          }`}>
-                            {b.status === "confirmed" && "Approved by Admin"}
-                            {b.status === "pending" && "Awaiting Confirmation"}
-                            {b.status === "completed" && "Completed Journey"}
-                            {b.status === "cancelled" && "Cancelled Journey"}
-                          </span>
+                      <div className="flex items-start gap-4">
+                        {b.serviceImage && (
+                          <div className="w-12 h-12 rounded-xl overflow-hidden border border-zinc-250 dark:border-zinc-700 flex-shrink-0">
+                            <img src={b.serviceImage} alt={b.serviceName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          </div>
+                        )}
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h5 className="font-bold text-xs text-zinc-900 dark:text-white">{b.serviceName}</h5>
+                            <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
+                              b.status === "confirmed" 
+                                ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 border-emerald-200/30" 
+                                : b.status === "pending"
+                                ? "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border-amber-200/30"
+                                : b.status === "completed"
+                                ? "bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400 border-blue-200/30"
+                                : "bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-400 border-rose-200/30"
+                            }`}>
+                              {b.status === "confirmed" && "Approved by Admin"}
+                              {b.status === "pending" && "Awaiting Confirmation"}
+                              {b.status === "completed" && "Completed Journey"}
+                              {b.status === "cancelled" && "Cancelled Journey"}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-zinc-500">Date: <strong className="text-zinc-700 dark:text-zinc-350">{b.date}</strong> • Slot: <strong className="text-zinc-700 dark:text-zinc-350">{b.timeSlot}</strong></p>
+                          <p className="text-[11px] text-zinc-500">Artist: {b.artist} • Lobby: {b.branch.split(',')[0]}</p>
                         </div>
-                        <p className="text-[11px] text-zinc-500">Date: <strong className="text-zinc-700 dark:text-zinc-350">{b.date}</strong> • Slot: <strong className="text-zinc-700 dark:text-zinc-350">{b.timeSlot}</strong></p>
-                        <p className="text-[11px] text-zinc-500">Artist: {b.artist} • Lobby: {b.branch.split(',')[0]}</p>
                       </div>
                       
                       <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start w-full md:w-auto gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-zinc-100 dark:border-zinc-700">

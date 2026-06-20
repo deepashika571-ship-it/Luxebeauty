@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { Calendar as CalendarIcon, Clock, User, Home, FileText, CheckCircle, HelpCircle } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Calendar as CalendarIcon, Clock, User, Home, FileText, CheckCircle, HelpCircle, ArrowRight, ChevronsRight, Sparkles } from "lucide-react";
 import { Booking, BeautyService } from "../types";
 import { DEFAULT_SERVICES, ARTISTS, BRANCHES, TIME_SLOTS } from "../services";
+import { motion } from "motion/react";
 
 interface BookingFormProps {
   initialService?: BeautyService | null;
@@ -20,6 +21,27 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
   const [isVerifyingSlots, setIsVerifyingSlots] = useState(false);
   const [slotCheckMessage, setSlotCheckMessage] = useState("");
   const [validationError, setValidationError] = useState("");
+
+  // Slide to confirm slider state
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [dragWidth, setDragWidth] = useState(250);
+  const [dragProgress, setDragProgress] = useState(0);
+  const [isSwiped, setIsSwiped] = useState(false);
+  const [sliderKey, setSliderKey] = useState(0);
+
+  useEffect(() => {
+    const calcWidth = () => {
+      if (trackRef.current) {
+        // Handle width is 56px (w-14)
+        setDragWidth(Math.max(100, trackRef.current.offsetWidth - 56));
+      }
+    };
+    calcWidth();
+    // Use resize observer to keep it high-fidelity responsive
+    const obs = new ResizeObserver(calcWidth);
+    if (trackRef.current) obs.observe(trackRef.current);
+    return () => obs.disconnect();
+  }, []);
 
   const selectedService = DEFAULT_SERVICES.find(s => s.id === serviceId) || DEFAULT_SERVICES[0];
 
@@ -56,18 +78,17 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
     setIsVerifyingSlots(false);
   };
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const proceedWithBooking = (): boolean => {
     setValidationError("");
 
     if (!currentUser) {
       setValidationError("You must be registered and logged in to secure a slot booking.");
-      return;
+      return false;
     }
 
     if (!date) {
       setValidationError("Please select a preferred date for your styling treatment.");
-      return;
+      return false;
     }
 
     // Pass data back upward to show checkout gateway
@@ -88,7 +109,23 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
       paymentMethod: "upi",
       paymentStatus: "pending",
       status: "pending",
+      serviceImage: selectedService.image,
+      serviceIcon: selectedService.image,
     });
+    return true;
+  };
+
+  const handleBookingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const success = proceedWithBooking();
+    if (success) {
+      setIsSwiped(true);
+      setDragProgress(100);
+    } else {
+      setIsSwiped(false);
+      setDragProgress(0);
+      setSliderKey(prev => prev + 1);
+    }
   };
 
   return (
@@ -251,12 +288,87 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
           />
         </div>
 
-        <button
-          type="submit"
-          className="w-full bg-[#4A3F3B] hover:bg-[#3D3330] text-white font-bold tracking-widest text-xs uppercase px-6 py-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 focus:outline-none cursor-pointer border border-natural-gold/15"
-        >
-          Proceed Booking Request (₹{selectedService.discountPrice})
-        </button>
+        {/* Luxe Slide to Proceed confirmation */}
+        <div className="space-y-2 mt-4">
+          <label className="block text-[11px] font-semibold uppercase tracking-widest text-[#4A3F3B] dark:text-zinc-400 text-center">
+            Booking authorization trigger
+          </label>
+          
+          <div 
+            ref={trackRef}
+            onClick={(e) => {
+              // Only trigger if click is on the track/text, not the knob
+              if (e.target === e.currentTarget || (e.target as HTMLElement).parentElement === e.currentTarget) {
+                if (isSwiped) return;
+                setIsSwiped(true);
+                setDragProgress(100);
+                const success = proceedWithBooking();
+                if (!success) {
+                  setTimeout(() => {
+                    setIsSwiped(false);
+                    setDragProgress(0);
+                    setSliderKey(prev => prev + 1);
+                  }, 1200);
+                }
+              }
+            }}
+            className="relative w-full h-14 bg-zinc-100 dark:bg-zinc-800/80 rounded-2xl border border-zinc-200 dark:border-zinc-700/60 overflow-hidden flex items-center select-none cursor-pointer group shadow-inner"
+          >
+            {/* Slide active color trace fill */}
+            <div 
+              className="absolute left-0 top-0 h-full bg-gradient-to-r from-natural-gold/15 to-[#4A3F3B]/30 dark:from-natural-gold/10 dark:to-natural-gold/20 rounded-l-2xl pointer-events-none transition-all duration-300"
+              style={{ width: `${Math.max(56, (dragProgress / 100) * (dragWidth + 56))}px` }}
+            />
+
+            {/* Slider hint text */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-[11px] font-bold tracking-widest text-[#4A3F3B]/80 dark:text-zinc-300/90 uppercase font-sans select-none">
+              <span className="flex items-center gap-1.5 px-12 text-center leading-tight">
+                {isSwiped ? "Authorizing reservation..." : `Slide arrow to proceed (₹${selectedService.discountPrice})`}
+                {!isSwiped && <ChevronsRight className="w-3.5 h-3.5 text-natural-gold animate-pulse shrink-0" />}
+              </span>
+            </div>
+
+            {/* Draggable Knob */}
+            <motion.div
+              key={sliderKey}
+              drag="x"
+              dragConstraints={{ left: 0, right: dragWidth }}
+              dragElastic={0.08}
+              dragMomentum={false}
+              animate={{ x: isSwiped ? dragWidth : undefined }}
+              onDrag={(event, info) => {
+                const calculated = Math.min(100, Math.max(0, (info.offset.x / dragWidth) * 100));
+                setDragProgress(calculated);
+              }}
+              onDragEnd={(event, info) => {
+                if (info.offset.x >= dragWidth - 15) {
+                  setIsSwiped(true);
+                  setDragProgress(100);
+                  const success = proceedWithBooking();
+                  if (!success) {
+                    setTimeout(() => {
+                      setIsSwiped(false);
+                      setDragProgress(0);
+                      setSliderKey(prev => prev + 1);
+                    }, 1200);
+                  }
+                } else {
+                  // Snap back
+                  setDragProgress(0);
+                }
+              }}
+              className="absolute left-1 w-12 h-12 rounded-xl bg-[#4A3F3B] dark:bg-zinc-700 hover:bg-[#3D3330] dark:hover:bg-zinc-650 flex items-center justify-center text-white cursor-grab active:cursor-grabbing shadow-lg border border-natural-gold/40 z-10"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ArrowRight className="w-5 h-5 text-natural-gold group-hover:translate-x-0.5 transition-transform" />
+            </motion.div>
+          </div>
+          
+          <p className="text-[10px] text-center text-zinc-400 dark:text-zinc-500 italic">
+            💡 Swipe gold key entirely to the right, or tap the bar to initiate your booking submission.
+          </p>
+        </div>
       </form>
     </div>
   );
