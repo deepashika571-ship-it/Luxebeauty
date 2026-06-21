@@ -36,18 +36,15 @@ import {
 import {
   auth,
   db,
-  remoteConfig
-} from "./firebase";
-import { fetchAndActivate, getValue } from "firebase/remote-config";
-import {
+  remoteConfig,
+  fetchAndActivate,
+  getValue,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   signInWithPopup,
-  GoogleAuthProvider
-} from "firebase/auth";
-import {
+  GoogleAuthProvider,
   doc,
   setDoc,
   getDoc,
@@ -59,7 +56,7 @@ import {
   query,
   where,
   onSnapshot
-} from "firebase/firestore";
+} from "./firebase";
 
 import {
   BeautyService,

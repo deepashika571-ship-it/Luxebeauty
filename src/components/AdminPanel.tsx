@@ -2,9 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Calendar, Clipboard, Users, ShieldAlert, CheckCircle, Clock, X, Sparkles, CreditCard, RefreshCw, Mail, AlertTriangle, Lock, KeyRound, Shield, Eye, EyeOff } from "lucide-react";
 import { BeautyService, Booking, UserProfile, OfferDeal, PaymentTransaction } from "../types";
 import { DEFAULT_SERVICES, DEFAULT_OFFERS } from "../services";
-import { db, auth } from "../firebase";
-import { collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { db, auth, collection, onSnapshot, doc, updateDoc, signInWithEmailAndPassword } from "../firebase";
 
 interface AdminPanelProps {
   services: BeautyService[];

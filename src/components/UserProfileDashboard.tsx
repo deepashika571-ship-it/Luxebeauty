@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { User, Calendar, CreditCard, Gift, Heart, LogOut, ChevronRight, Bookmark, CircleCheck, AlertCircle, Award, Users, RefreshCw, UserPlus, Lock, CheckCircle, Info, Mail, XCircle, HelpCircle } from "lucide-react";
 import { Booking, UserProfile, BeautyService, OfferDeal, PaymentTransaction } from "../types";
 import { DEFAULT_SERVICES, DEFAULT_OFFERS } from "../services";
-import { db } from "../firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { db, collection, query, where, getDocs } from "../firebase";
 
 interface UserProfileDashboardProps {
   userProfile: UserProfile | null;

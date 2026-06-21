@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Check, CreditCard, Landmark, Smartphone, PiggyBank, DollarSign, Download, Printer, Percent, ArrowLeft, Loader2, Sparkles, Copy, CheckCircle2, XCircle, Mail, AlertCircle, PhoneCall, HelpCircle } from "lucide-react";
 import { Booking, PaymentMethod, PaymentStatus, PaymentTransaction } from "../types";
 import { DEFAULT_SERVICES } from "../services";
-import { db } from "../firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { db, doc, setDoc } from "../firebase";
 
 interface CheckoutGatewayProps {
   booking: Booking;
