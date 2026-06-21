@@ -15,6 +15,7 @@ interface UserProfileDashboardProps {
   onConnectGoogle?: () => Promise<void>;
   onAddLoyaltyPoints?: (points: number) => void;
   onCheckoutBooking?: (booking: Booking) => void;
+  services?: BeautyService[];
 }
 
 export default function UserProfileDashboard({
@@ -26,8 +27,10 @@ export default function UserProfileDashboard({
   googleAccessToken,
   onConnectGoogle,
   onAddLoyaltyPoints,
-  onCheckoutBooking
+  onCheckoutBooking,
+  services
 }: UserProfileDashboardProps) {
+  const activeServices = services && services.length > 0 ? services : DEFAULT_SERVICES;
   const [activeTab, setActiveTab] = useState<"appointments" | "profile" | "wishlist" | "loyalty" | "offers" | "contacts" | "payments">("appointments");
   const [wishlistItems, setWishlistItems] = useState<BeautyService[]>([]);
   const [userPayments, setUserPayments] = useState<PaymentTransaction[]>([]);
@@ -80,13 +83,13 @@ export default function UserProfileDashboard({
 
   useEffect(() => {
     if (userProfile && userProfile.wishlist) {
-      const items = DEFAULT_SERVICES.filter(s => userProfile.wishlist.includes(s.id));
+      const items = activeServices.filter(s => userProfile.wishlist.includes(s.id));
       setWishlistItems(items);
     } else {
       // Default fallback items
-      setWishlistItems([DEFAULT_SERVICES[1], DEFAULT_SERVICES[3]]);
+      setWishlistItems([activeServices[1] || activeServices[0], activeServices[3] || activeServices[0]]);
     }
-  }, [userProfile]);
+  }, [userProfile, activeServices]);
 
   const fetchGoogleContacts = async () => {
     if (!googleAccessToken) return;
@@ -528,7 +531,7 @@ export default function UserProfileDashboard({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {DEFAULT_OFFERS.map((of) => (
+                {savedOffers.map((of) => (
                   <div key={of.id} className="bg-amber-50/20 dark:bg-zinc-800/50 border border-dashed border-amber-300 rounded-2xl p-4 relative overflow-hidden">
                     <span className="absolute -top-1 -right-1 bg-amber-500 text-white font-mono text-[8px] font-bold px-2 py-1 rotate-6 rounded">
                       HOT OFFER

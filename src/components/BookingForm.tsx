@@ -9,10 +9,12 @@ interface BookingFormProps {
   currentUser: { uid: string; email: string; displayName?: string; phoneNumber?: string } | null;
   onSubmit: (bookingData: Omit<Booking, "id" | "createdAt">) => void;
   onCancel: () => void;
+  services?: BeautyService[];
 }
 
-export default function BookingForm({ initialService, currentUser, onSubmit, onCancel }: BookingFormProps) {
-  const [serviceId, setServiceId] = useState(initialService?.id || DEFAULT_SERVICES[0].id);
+export default function BookingForm({ initialService, currentUser, onSubmit, onCancel, services }: BookingFormProps) {
+  const activeServices = services && services.length > 0 ? services : DEFAULT_SERVICES;
+  const [serviceId, setServiceId] = useState(initialService?.id || activeServices[0].id);
   const [date, setDate] = useState("");
   const [timeSlot, setTimeSlot] = useState(TIME_SLOTS[1]);
   const [artist, setArtist] = useState(ARTISTS[0].name);
@@ -44,7 +46,7 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
     return () => obs.disconnect();
   }, []);
 
-  const selectedService = DEFAULT_SERVICES.find(s => s.id === serviceId) || DEFAULT_SERVICES[0];
+  const selectedService = activeServices.find(s => s.id === serviceId) || activeServices[0];
 
   useEffect(() => {
     if (initialService) {
@@ -174,7 +176,7 @@ export default function BookingForm({ initialService, currentUser, onSubmit, onC
               onChange={(e) => setServiceId(e.target.value)}
               className="w-full bg-zinc-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-850 dark:text-zinc-150 outline-none focus:border-pink-300"
             >
-              {DEFAULT_SERVICES.map((s) => (
+              {activeServices.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name} — (₹{s.discountPrice})
                 </option>

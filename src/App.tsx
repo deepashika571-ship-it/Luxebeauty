@@ -85,6 +85,54 @@ import BookingForm from "./components/BookingForm";
 import UserProfileDashboard from "./components/UserProfileDashboard";
 import AdminPanel from "./components/AdminPanel";
 import ReviewSection from "./components/ReviewSection";
+import { sendFormspreeUpdate } from "./utils/formspree";
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 export default function App() {
   // Theme controllers
@@ -263,12 +311,10 @@ export default function App() {
             createdAt: new Date().toISOString(),
           };
           await setDoc(pfRef, fallbackProfile);
+          sendFormspreeUpdate("user_registered", { userProfile: fallbackProfile });
           setProfile(fallbackProfile);
           setLoyaltyPoints(200);
         }
-
-        // Fetch User Bookings from Firestore
-        fetchBookings(currentUser.uid);
       } else {
         setUser(null);
         setProfile(null);
@@ -277,40 +323,131 @@ export default function App() {
       }
     });
 
-    // Populate overall initial services/offers from Firestore if available
-    syncOverallMenuData();
     return unsubscribe;
   }, []);
 
-  // Admin-specific synchronization of bookings and user accounts in real-time
+  // Real-time synchronization of bookings and user profiles based on authentications
   useEffect(() => {
-    const isAdmin = profile?.role === "admin" || user?.email?.toLowerCase().includes("admin");
-    if (!isAdmin) return;
+    if (!user) {
+      setBookings([]);
+      return;
+    }
 
-    // Real-time subscription to ALL bookings
-    const unsubBookings = onSnapshot(collection(db, "bookings"), (snapshot) => {
-      const bSnapshot: Booking[] = [];
+    const isAdmin = profile?.role === "admin" || user.email.toLowerCase().includes("admin") || currentView === "admin";
+    const bookingsQuery = isAdmin
+      ? query(collection(db, "bookings"))
+      : query(collection(db, "bookings"), where("userId", "==", user.uid));
+
+    // Subscription to Bookings in real-time
+    const unsubBookings = onSnapshot(bookingsQuery, (snapshot) => {
+      const loaded: Booking[] = [];
       snapshot.forEach((docSnap) => {
-        bSnapshot.push({ id: docSnap.id, ...docSnap.data() } as Booking);
+        loaded.push({ id: docSnap.id, ...docSnap.data() } as Booking);
       });
-      bSnapshot.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setBookings(bSnapshot);
+      loaded.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setBookings(loaded);
+    }, (err) => {
+      handleFirestoreError(err, OperationType.LIST, "bookings");
     });
 
-    // Real-time subscription to ALL users
-    const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
-      const uSnapshot: UserProfile[] = [];
-      snapshot.forEach((docSnap) => {
-        uSnapshot.push({ uid: docSnap.id, ...docSnap.data() } as UserProfile);
+    let unsubUsers = () => {};
+    if (isAdmin) {
+      // Real-time subscription to ALL users (for admin panel view)
+      unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+        const uSnapshot: UserProfile[] = [];
+        snapshot.forEach((docSnap) => {
+          uSnapshot.push({ uid: docSnap.id, ...docSnap.data() } as UserProfile);
+        });
+        setUsersList(uSnapshot);
+      }, (err) => {
+        handleFirestoreError(err, OperationType.LIST, "users");
       });
-      setUsersList(uSnapshot);
-    });
+    }
 
     return () => {
       unsubBookings();
       unsubUsers();
     };
-  }, [profile?.role, user?.email]);
+  }, [user, profile?.role, currentView]);
+
+  // Real-time synchronization of Services, Offers (Promo codes & vouchers), and Reviews for ALL custom pages
+  useEffect(() => {
+    // 1. Subscribe to "services" collection in real-time
+    const unsubServices = onSnapshot(collection(db, "services"), async (snapshot) => {
+      if (!snapshot.empty) {
+        const loaded: BeautyService[] = [];
+        snapshot.forEach((docSnap) => {
+          loaded.push({ id: docSnap.id, ...docSnap.data() } as BeautyService);
+        });
+        setServices(loaded);
+      } else {
+        // Build initial seed if collection is empty
+        try {
+          for (const s of DEFAULT_SERVICES) {
+            await setDoc(doc(db, "services", s.id), s);
+          }
+        } catch (e) {
+          console.warn("Seeding initial services to Firestore failed:", e);
+        }
+        setServices(DEFAULT_SERVICES);
+      }
+    }, (err) => {
+      handleFirestoreError(err, OperationType.LIST, "services");
+    });
+
+    // 2. Subscribe to "offers" collection in real-time
+    const unsubOffers = onSnapshot(collection(db, "offers"), async (snapshot) => {
+      if (!snapshot.empty) {
+        const loaded: OfferDeal[] = [];
+        snapshot.forEach((docSnap) => {
+          loaded.push({ id: docSnap.id, ...docSnap.data() } as OfferDeal);
+        });
+        setOffers(loaded);
+      } else {
+        // Build initial seed if collection is empty
+        try {
+          for (const o of DEFAULT_OFFERS) {
+            await setDoc(doc(db, "offers", o.id), o);
+          }
+        } catch (e) {
+          console.warn("Seeding initial offers to Firestore failed:", e);
+        }
+        setOffers(DEFAULT_OFFERS);
+      }
+    }, (err) => {
+      handleFirestoreError(err, OperationType.LIST, "offers");
+    });
+
+    // 3. Subscribe to "reviews" collection in real-time
+    const unsubReviews = onSnapshot(collection(db, "reviews"), async (snapshot) => {
+      if (!snapshot.empty) {
+        const loaded: Review[] = [];
+        snapshot.forEach((docSnap) => {
+          loaded.push({ id: docSnap.id, ...docSnap.data() } as Review);
+        });
+        loaded.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setReviews(loaded);
+      } else {
+        // Build initial seed if collection is empty
+        try {
+          for (const r of INITIAL_REVIEWS) {
+            await setDoc(doc(db, "reviews", r.id), r);
+          }
+        } catch (e) {
+          console.warn("Seeding initial reviews to Firestore failed:", e);
+        }
+        setReviews(INITIAL_REVIEWS);
+      }
+    }, (err) => {
+      handleFirestoreError(err, OperationType.LIST, "reviews");
+    });
+
+    return () => {
+      unsubServices();
+      unsubOffers();
+      unsubReviews();
+    };
+  }, []);
 
   // OTP Countdown timer simulation
   useEffect(() => {
@@ -322,75 +459,6 @@ export default function App() {
     }
     return () => clearInterval(interval);
   }, [showOtpModal, otpTimer]);
-
-  // Sync services & bookings & reviews dynamically
-  const syncOverallMenuData = async () => {
-    try {
-      const srvs = await getDocs(collection(db, "services"));
-      if (!srvs.empty) {
-        const loaded: BeautyService[] = [];
-        srvs.forEach((doc) => loaded.push({ id: doc.id, ...doc.data() } as BeautyService));
-        setServices(loaded);
-      } else {
-        // Build initial seed
-        for (const s of DEFAULT_SERVICES) {
-          await setDoc(doc(db, "services", s.id), s);
-        }
-        setServices(DEFAULT_SERVICES);
-      }
-      
-      const offs = await getDocs(collection(db, "offers"));
-      if (!offs.empty) {
-        const loaded: OfferDeal[] = [];
-        offs.forEach((doc) => loaded.push({ id: doc.id, ...doc.data() } as OfferDeal));
-        setOffers(loaded);
-      } else {
-        // Build initial seed
-        for (const o of DEFAULT_OFFERS) {
-          await setDoc(doc(db, "offers", o.id), o);
-        }
-        setOffers(DEFAULT_OFFERS);
-      }
-
-      await syncAllReviews();
-    } catch (e) {
-      console.warn("Using offline memory structures: ", e);
-    }
-  };
-
-  const syncAllReviews = async () => {
-    try {
-      const revs = await getDocs(collection(db, "reviews"));
-      if (!revs.empty) {
-        const loaded: Review[] = [];
-        revs.forEach((doc) => loaded.push({ id: doc.id, ...doc.data() } as Review));
-        setReviews(loaded);
-      } else {
-        // Build initial seed
-        for (const r of INITIAL_REVIEWS) {
-          await setDoc(doc(db, "reviews", r.id), r);
-        }
-        setReviews(INITIAL_REVIEWS);
-      }
-    } catch (err) {
-      console.warn("Reviews syncing in static storage");
-    }
-  };
-
-  const fetchBookings = async (uid: string) => {
-    try {
-      const isAdmin = user && user.email?.toLowerCase().includes("admin");
-      const bksQ = isAdmin
-        ? query(collection(db, "bookings"))
-        : query(collection(db, "bookings"), where("userId", "==", uid));
-      const bksSnap = await getDocs(bksQ);
-      const loaded: Booking[] = [];
-      bksSnap.forEach((doc) => loaded.push({ id: doc.id, ...doc.data() } as Booking));
-      setBookings(loaded);
-    } catch (err) {
-      console.warn("Booking syncing error, utilizing dynamic in-memory store.");
-    }
-  };
 
   // Create customized notification action
   const addNotification = (title: string, message: string, type: 'success' | 'info' | 'warning' = 'info') => {
@@ -534,6 +602,7 @@ export default function App() {
       };
 
       await setDoc(doc(db, "users", activeUid), finalProfile);
+      sendFormspreeUpdate("user_registered", { userProfile: finalProfile });
       setProfile(finalProfile);
       setLoyaltyPoints(finalProfile.loyaltyPoints);
       
@@ -602,6 +671,8 @@ export default function App() {
       await setDoc(doc(db, "booking_requests", targetBooking.id), targetBooking);
       await setDoc(doc(db, "appointments", targetBooking.id), targetBooking);
       
+      sendFormspreeUpdate("booking_request", { booking: targetBooking });
+
       setBookings((prev) => [targetBooking, ...prev]);
       addNotification(
         "Booking Request Submitted!",
@@ -613,6 +684,7 @@ export default function App() {
       setCurrentView("dashboard");
     } catch (err) {
       console.warn("Saving requested booking locally due to firestore status: ", err);
+      sendFormspreeUpdate("booking_request", { booking: targetBooking });
       setBookings((prev) => [targetBooking, ...prev]);
       addNotification("Offline Booking Saved", "Booking saved to your offline aesthetic file.", "info");
       setSuccessBookingRef(targetBooking);
@@ -629,6 +701,11 @@ export default function App() {
       await setDoc(doc(db, "booking_requests", finalBooking.id), finalBooking);
       await setDoc(doc(db, "appointments", finalBooking.id), finalBooking);
       
+      sendFormspreeUpdate("booking_confirmed", { booking: finalBooking });
+      if (finalBooking.paymentDetails) {
+        sendFormspreeUpdate("payment", { payment: finalBooking.paymentDetails });
+      }
+
       // Update local state bookings list
       setBookings((prev) =>
         prev.map((b) => (b.id === finalBooking.id ? finalBooking : b))
@@ -649,6 +726,10 @@ export default function App() {
       setCurrentView("dashboard");
     } catch (err) {
       console.warn("Saving checkout update offline: ", err);
+      sendFormspreeUpdate("booking_confirmed", { booking: finalBooking });
+      if (finalBooking.paymentDetails) {
+        sendFormspreeUpdate("payment", { payment: finalBooking.paymentDetails });
+      }
       setBookings((prev) =>
         prev.map((b) => (b.id === finalBooking.id ? finalBooking : b))
       );
@@ -732,11 +813,21 @@ export default function App() {
       try {
         await updateDoc(doc(db, "appointments", id), { status });
       } catch (e) {}
+      
+      const matched = bookings.find(b => b.id === id);
+      if (matched) {
+        sendFormspreeUpdate("booking_confirmed", { booking: { ...matched, status }, newStatus: status });
+      }
+
       setBookings((prev) =>
         prev.map((b) => (b.id === id ? { ...b, status } : b))
       );
       addNotification("Appointment Status Updated", `Booking status updated to ${status}`, "success");
     } catch (err) {
+      const matched = bookings.find(b => b.id === id);
+      if (matched) {
+        sendFormspreeUpdate("booking_confirmed", { booking: { ...matched, status }, newStatus: status });
+      }
       setBookings((prev) =>
         prev.map((b) => (b.id === id ? { ...b, status } : b))
       );
@@ -1240,6 +1331,7 @@ export default function App() {
               currentUser={user}
               onSubmit={handleBookingDetailsSubmit}
               onCancel={() => setCurrentView("services")}
+              services={services}
             />
           </div>
         )}
@@ -1291,6 +1383,7 @@ export default function App() {
               userProfile={profile}
               bookings={bookings}
               savedOffers={offers}
+              services={services}
               onSelectService={(s) => {
                 setSelectedService(s);
                 setCurrentView("booking");
