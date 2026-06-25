@@ -30,13 +30,12 @@ import {
 
 // Configured from user-provided firebase details
 const firebaseConfig = {
-  apiKey: "AIzaSyCAJe-j85HV3xbSoxASxry5WpP3gutlapA",
-  authDomain: "luxa-makeup.firebaseapp.com",
-  databaseURL: "https://luxa-makeup-default-rtdb.firebaseio.com",
-  projectId: "luxa-makeup",
-  storageBucket: "luxa-makeup.firebasestorage.app",
-  messagingSenderId: "281493379346",
-  appId: "1:281493379346:web:a6c4214def78043ee8bbcb"
+  apiKey: "AIzaSyD51tGPZCaHPOAA_dnj_DIQHPAzsZniTlI",
+  authDomain: "beauty-ae724.firebaseapp.com",
+  projectId: "beauty-ae724",
+  storageBucket: "beauty-ae724.firebasestorage.app",
+  messagingSenderId: "432217513680",
+  appId: "1:432217513680:web:2ace5f88a72e01415d88d5"
 };
 
 // Initialize Firebase
