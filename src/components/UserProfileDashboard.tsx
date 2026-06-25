@@ -662,7 +662,7 @@ export default function UserProfileDashboard({
                   </div>
                   <div>
                     <label className="block font-bold text-zinc-500 mb-1 uppercase tracking-wider">Phone Number</label>
-                    <input type="tel" readOnly value={userProfile?.phoneNumber || "+91 9342956011"} className="w-full bg-zinc-50 dark:bg-zinc-850 border border-gray-200 dark:border-zinc-800 rounded-lg p-2" />
+                    <input type="tel" readOnly value={userProfile?.phoneNumber || "+91 9025049229"} className="w-full bg-zinc-50 dark:bg-zinc-850 border border-gray-200 dark:border-zinc-800 rounded-lg p-2" />
                   </div>
                   <div>
                     <label className="block font-bold text-zinc-500 mb-1 uppercase tracking-wider">Country</label>

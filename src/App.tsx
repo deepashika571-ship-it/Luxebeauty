@@ -19,6 +19,7 @@ import {
   Star,
   Send,
   ArrowRight,
+  ArrowLeft,
   Bookmark,
   Share2,
   Lock,
@@ -30,6 +31,7 @@ import {
   LogOut,
   Mail,
   Menu,
+  Instagram,
   X
 } from "lucide-react";
 
@@ -134,6 +136,14 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 export default function App() {
   // Theme controllers
   const [darkMode, setDarkMode] = useState(false);
+
+  // Isolated Admin website mode detection (triggers if URL contains "?admin=true", "?view=admin" or starts with /admin)
+  const [isAdminSubsetPath, setIsAdminSubsetPath] = useState(() => {
+    const search = window.location.search || "";
+    const path = window.location.pathname || "";
+    const hash = window.location.hash || "";
+    return search.includes("admin=true") || search.includes("view=admin") || path.startsWith("/admin") || hash.includes("admin");
+  });
 
   // Auth & Profile states
   const [user, setUser] = useState<{ uid: string; email: string; displayName?: string; phoneNumber?: string } | null>(null);
@@ -299,7 +309,7 @@ export default function App() {
             uid: currentUser.uid,
             email: currentUser.email || "",
             fullName: currentUser.displayName || "Luxe Guest",
-            phoneNumber: currentUser.phoneNumber || "+91 95000 12345",
+            phoneNumber: currentUser.phoneNumber || "+91 9025049229",
             country: "India",
             role: currentUser.email?.toLowerCase().includes("admin") ? "admin" : "user",
             loyaltyPoints: 200, // 200 Welcome bonus
@@ -891,6 +901,51 @@ export default function App() {
     return matchQuery && matchCat && matchPrice;
   });
 
+  if (isAdminSubsetPath) {
+    return (
+      <div className="bg-zinc-900 text-zinc-100 min-h-screen flex flex-col font-sans transition-colors duration-300">
+        {/* Isolated Separate Site Header */}
+        <div className="bg-[#4A3F3B] text-[#FDF2F0] text-center py-2 px-4 text-[10px] font-bold tracking-widest uppercase flex items-center justify-center gap-2 select-none z-50">
+          <Shield className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+          <span>AURA LUXE — SECURE EXECUTIVE TERMINAL</span>
+        </div>
+        
+        <div className="flex-grow max-w-7xl w-full mx-auto p-4 md:p-8">
+          <AdminPanel
+            services={services}
+            bookings={bookings}
+            users={usersList}
+            offers={offers}
+            onAddService={handleAdminAddService}
+            onDeleteService={handleAdminDeleteService}
+            onUpdateService={handleAdminUpdateService}
+            onUpdateBookingStatus={handleAdminUpdateBooking}
+            onDeleteBooking={handleAdminDeleteBooking}
+            onAddOffer={handleAdminAddOffer}
+            onDeleteOffer={handleAdminDeleteOffer}
+            onUpdateOffer={handleAdminUpdateOffer}
+          />
+        </div>
+
+        {/* Separated Web Footer */}
+        <footer className="bg-zinc-950 border-t border-zinc-800/60 py-6 text-zinc-500 text-xs font-semibold">
+          <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-center">
+            <p>© 2026 AURA Administration Systems. Strictly Confidential.</p>
+            <button 
+              onClick={() => {
+                // Return to client landing page
+                window.location.href = window.location.origin;
+              }}
+              className="text-amber-500 hover:text-amber-400 flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px] transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Return to Beauty Studio
+            </button>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
   return (
     <div className={`${darkMode ? "dark bg-zinc-950 text-amber-50" : "bg-neutral-50 text-zinc-900"} min-h-screen flex flex-col font-sans transition-colors duration-300`}>
       
@@ -927,13 +982,6 @@ export default function App() {
             <button onClick={() => setCurrentView("services")} className={`hover:text-natural-gold transition-colors cursor-pointer ${currentView === "services" ? "text-natural-gold font-bold" : "text-natural-muted"}`}>Treatments</button>
             <button onClick={() => setCurrentView("recommender")} className={`hover:text-natural-gold transition-colors cursor-pointer ${currentView === "recommender" ? "text-natural-gold font-bold" : "text-natural-muted"}`}>AI Skincare Advisor</button>
             <button onClick={() => setCurrentView("reviews")} className={`hover:text-natural-gold transition-colors cursor-pointer ${currentView === "reviews" ? "text-natural-gold font-bold" : "text-natural-muted"}`}>Reviews</button>
-            
-            <button
-              onClick={() => setCurrentView("admin")}
-              className={`bg-[#FDF2F0] text-natural-gold border border-natural-border px-3 py-1.5 rounded-lg text-[10px] font-extrabold tracking-widest uppercase flex items-center gap-1 cursor-pointer hover:opacity-95 ${currentView === "admin" ? "bg-natural-gold text-white" : ""}`}
-            >
-              <Shield className="w-3.5 h-3.5" /> Admin Console
-            </button>
           </nav>
 
           {/* Header Action Items */}
@@ -1024,8 +1072,6 @@ export default function App() {
             <button onClick={() => { setCurrentView("services"); setMobileMenuOpen(false); }} className="py-2 hover:bg-natural-peach rounded-lg text-[#4A3F3B]">Treatments</button>
             <button onClick={() => { setCurrentView("recommender"); setMobileMenuOpen(false); }} className="py-2 hover:bg-natural-peach rounded-lg text-[#4A3F3B]">AI Advisor</button>
             <button onClick={() => { setCurrentView("reviews"); setMobileMenuOpen(false); }} className="py-2 hover:bg-natural-peach rounded-lg text-[#4A3F3B]">Reviews</button>
-            
-            <button onClick={() => { setCurrentView("admin"); setMobileMenuOpen(false); }} className="py-2 bg-natural-peach text-natural-gold border border-natural-border rounded-lg">Admin Console</button>
           </div>
         )}
       </header>
@@ -1483,7 +1529,7 @@ export default function App() {
             </div>
             <div>
               <h4 className="font-serif text-lg font-bold">Secure OTP Verification</h4>
-              <p className="text-xs text-natural-muted mt-1">An authentication code was simulated via SMS to register: {regPhone || "+91 9342956011"}</p>
+              <p className="text-xs text-natural-muted mt-1">An authentication code was simulated via SMS to register: {regPhone || "+91 9025049229"}</p>
             </div>
             
             <div className="space-y-3">
@@ -1614,15 +1660,25 @@ export default function App() {
               <h5 className="font-serif text-sm font-bold text-white uppercase">Contact & Support</h5>
               <p>Owner: <strong>Grand Cosmologist Aditii Roy</strong></p>
               <p>Email: <strong>abishek9342956011@gmail.com</strong></p>
-              <p>Contact No: <strong>+91 9342956011</strong></p>
-              <a
-                href="https://wa.me/919342956011"
-                target="_blank"
-                referrerPolicy="no-referrer"
-                className="inline-flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white font-bold text-[9px] uppercase tracking-wider px-3.5 py-1.5 rounded-lg mt-2 cursor-pointer transition-all"
-              >
-                WhatsApp Lounge Room
-              </a>
+              <p>Contact No: <strong>+91 9025049229</strong></p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <a
+                  href="https://wa.me/919025049229"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white font-bold text-[9px] uppercase tracking-wider px-3.5 py-1.5 rounded-lg cursor-pointer transition-all"
+                >
+                  WhatsApp Lounge Room
+                </a>
+                <a
+                  href="https://www.instagram.com/sri_jay_makeupartist/#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 bg-gradient-to-r from-purple-600 via-pink-500 to-amber-500 hover:opacity-90 text-white font-bold text-[9px] uppercase tracking-wider px-3.5 py-1.5 rounded-lg cursor-pointer transition-all shadow-sm"
+                >
+                  <Instagram className="w-3.5 h-3.5" /> Instagram
+                </a>
+              </div>
             </div>
 
             {/* Interactive map coordinates details */}

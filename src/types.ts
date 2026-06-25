@@ -111,7 +111,7 @@ export interface PaymentTransaction {
   amount: number;
   paymentMethod: PaymentMethod;
   upiIdUsed: string; // The customer's UPI ID or VPA
-  merchantUpiId: string; // "9342956011@axl" (PhonePe UPI ID)
+  merchantUpiId: string; // "9025049229@axl" (PhonePe UPI ID)
   status: 'paid' | 'failed' | 'refunded';
   refundStatus: 'none' | 'pending' | 'completed';
   refundWindowDays: number; // 2 days limit

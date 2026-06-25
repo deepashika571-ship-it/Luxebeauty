@@ -88,7 +88,7 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
     const isSuccess = true;
     const nowIso = new Date().toISOString();
 
-    const upiUsed = paymentMethod === "upi" ? (upiPhone || "9342956011@axl") : "";
+    const upiUsed = paymentMethod === "upi" ? (upiPhone || "9025049229@axl") : "";
 
     const tx: PaymentTransaction = {
       id: txId,
@@ -102,7 +102,7 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
       amount: finalTotal,
       paymentMethod,
       upiIdUsed: upiUsed,
-      merchantUpiId: "9342956011@axl", // PhonePe UPI ID
+      merchantUpiId: "9025049229@axl", // PhonePe UPI ID
       status: "paid",
       refundStatus: "none",
       refundWindowDays: 2,
@@ -158,7 +158,7 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
           <h3 className="font-serif text-2xl text-zinc-900 dark:text-zinc-50 font-semibold tracking-wide">PhonePe Transaction Failed</h3>
           <p className="text-xs text-rose-600 dark:text-rose-450 font-bold uppercase tracking-widest mt-1.5">No funds debited? Refund Initialized Automatically</p>
           <p className="text-xs text-zinc-500 mt-2 max-w-md mx-auto">
-            Your payment authorization to merchant UPI code <span className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded font-bold">9342956011@axl</span> could not be confirmed by the banking gateway.
+            Your payment authorization to merchant UPI code <span className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded font-bold">9025049229@axl</span> could not be confirmed by the banking gateway.
           </p>
         </div>
 
@@ -396,12 +396,12 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
               <div className="flex justify-between items-start">
                 <div>
                   <label className="block text-[10px] font-bold uppercase text-zinc-450 dark:text-zinc-500 tracking-wider">Merchant PhonePe Address</label>
-                  <p className="font-mono text-xs font-bold text-natural-gold mt-0.5">9342956011@axl</p>
+                  <p className="font-mono text-xs font-bold text-natural-gold mt-0.5">9025049229@axl</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText("9342956011@axl");
+                    navigator.clipboard.writeText("9025049229@axl");
                     setUpiCopied(true);
                     setTimeout(() => setUpiCopied(false), 2000);
                   }}
@@ -416,7 +416,7 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
               <div className="flex flex-col items-center justify-center p-3 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl shadow-sm text-center">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                    `upi://pay?pa=9342956011@axl&pn=Aura%20Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBooking_${booking.id}`
+                    `upi://pay?pa=9025049229@axl&pn=Aura%20Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBooking_${booking.id}`
                   )}`}
                   alt="PhonePe UPI QR Code"
                   className="w-36 h-36 p-1.5 border border-zinc-150 rounded-lg animate-fade-in"
@@ -427,7 +427,7 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
 
                 {/* Direct Mobile launch deep-link */}
                 <a
-                  href={`upi://pay?pa=9342956011@axl&pn=Aura%2520Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBooking_${booking.id}`}
+                  href={`upi://pay?pa=9025049229@axl&pn=Aura%2520Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBooking_${booking.id}`}
                   className="w-full text-center bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-900 text-white font-bold py-2.5 px-3 rounded-xl text-[10px] uppercase font-mono tracking-wider transition-colors mt-3"
                 >
                   ⚡ Launch respective UPI app on this device
@@ -440,7 +440,7 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
                 <input
                   type="text"
                   required
-                  placeholder="e.g. name@okaxis or 9342956011@ybl"
+                  placeholder="e.g. name@okaxis or 9025049229@ybl"
                   value={upiPhone}
                   onChange={(e) => setUpiPhone(e.target.value)}
                   className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-xs outline-none focus:border-amber-400 font-mono text-zinc-800 dark:text-zinc-200"
@@ -464,7 +464,7 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
               <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-zinc-900 border border-dashed border-emerald-300 dark:border-emerald-800/80 rounded-2xl text-center">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                    `upi://pay?pa=9342956011@axl&pn=Aura%20Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBookingPayAtSalon_${booking.id}`
+                    `upi://pay?pa=9025049229@axl&pn=Aura%20Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBookingPayAtSalon_${booking.id}`
                   )}`}
                   alt="Aura Luxe UPI QR Terminal"
                   className="w-36 h-36 p-1.5 border border-emerald-200 dark:border-emerald-800 rounded-lg shadow-sm"
@@ -474,7 +474,7 @@ export default function CheckoutGateway({ booking, couponCodeInput, onPaymentSuc
                 <p className="text-[9px] text-zinc-400 max-w-[210px] leading-normal mt-0.5">Scans will automatically trigger secure UPI authentication to complete payout of ₹{finalTotal}.</p>
                 
                 <a
-                  href={`upi://pay?pa=9342956011@axl&pn=Aura%2520Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBookingPayAtSalon_${booking.id}`}
+                  href={`upi://pay?pa=9025049229@axl&pn=Aura%2520Luxe%2520Studio&am=${finalTotal}&cu=INR&tn=LuxeBeautyBookingPayAtSalon_${booking.id}`}
                   className="w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-[10px] uppercase font-mono tracking-wider transition-colors mt-2"
                 >
                   ⚡ Connect and Launch UPI App

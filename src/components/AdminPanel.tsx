@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Calendar, Clipboard, Users, ShieldAlert, CheckCircle, Clock, X, Sparkles, CreditCard, RefreshCw, Mail, AlertTriangle, Lock, KeyRound, Shield, Eye, EyeOff } from "lucide-react";
 import { BeautyService, Booking, UserProfile, OfferDeal, PaymentTransaction } from "../types";
 import { DEFAULT_SERVICES, DEFAULT_OFFERS } from "../services";
-import { db, auth, collection, onSnapshot, doc, updateDoc, signInWithEmailAndPassword } from "../firebase";
+import { db, auth, collection, onSnapshot, doc, updateDoc, deleteDoc, signInWithEmailAndPassword } from "../firebase";
 
 interface AdminPanelProps {
   services: BeautyService[];
@@ -111,6 +111,56 @@ export default function AdminPanel({
   const [adminTab, setAdminTab] = useState<"services" | "bookings" | "users" | "offers" | "payments">("bookings");
   const [editingService, setEditingService] = useState<BeautyService | null>(null);
   const [editingOffer, setEditingOffer] = useState<OfferDeal | null>(null);
+
+  // States for user profile control
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [editFullName, setEditFullName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhoneNumber, setEditPhoneNumber] = useState("");
+  const [editLoyaltyPoints, setEditLoyaltyPoints] = useState(0);
+  const [editRole, setEditRole] = useState<"user" | "admin">("user");
+  const [editCountry, setEditCountry] = useState("");
+
+  const handleStartEditUser = (u: UserProfile) => {
+    setEditingUser(u);
+    setEditFullName(u.fullName || "");
+    setEditEmail(u.email || "");
+    setEditPhoneNumber(u.phoneNumber || "");
+    setEditLoyaltyPoints(u.loyaltyPoints || 0);
+    setEditRole(u.role || "user");
+    setEditCountry(u.country || "IN");
+  };
+
+  const handleSaveUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    try {
+      const userRef = doc(db, "users", editingUser.uid);
+      await updateDoc(userRef, {
+        fullName: editFullName,
+        email: editEmail,
+        phoneNumber: editPhoneNumber,
+        loyaltyPoints: Number(editLoyaltyPoints),
+        role: editRole,
+        country: editCountry,
+      });
+      triggerNotify(`User profile for ${editFullName} updated successfully!`);
+      setEditingUser(null);
+    } catch (err: any) {
+      triggerNotify(`Error editing user: ${err.message || err}`);
+    }
+  };
+
+  const handleDeleteUser = async (uid: string, fullName: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete user account "${fullName}"? This action cannot be undone.`)) return;
+    try {
+      const userRef = doc(db, "users", uid);
+      await deleteDoc(userRef);
+      triggerNotify(`User ${fullName} deleted successfully.`);
+    } catch (err: any) {
+      triggerNotify(`Error deleting user: ${err.message || err}`);
+    }
+  };
   
   // Realtime Payment transactions monitor hook for PhonePe tracing
   const [payments, setPayments] = useState<PaymentTransaction[]>([]);
@@ -813,38 +863,195 @@ export default function AdminPanel({
 
         {/* Users view */}
         {adminTab === "users" && (
-          <div className="space-y-6">
-            <h4 className="font-serif text-lg text-zinc-850 font-medium">Registered Lounge Client Directory</h4>
-            <div className="overflow-x-auto">
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h4 className="font-serif text-lg text-zinc-850 font-medium">Registered Lounge Client Directory</h4>
+                <p className="text-xs text-zinc-500">View, manipulate roles, update personal details, adjust loyalty assets, or ban inactive client profiles.</p>
+              </div>
+            </div>
+
+            {/* Edit User Form/Modal Card */}
+            {editingUser && (
+              <div className="bg-zinc-50 border-2 border-amber-450 rounded-2xl p-6 space-y-4 shadow-sm animate-fade-in">
+                <div className="flex justify-between items-center pb-2 border-b border-zinc-200">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-amber-600 animate-pulse" />
+                    <span className="font-serif text-md font-semibold text-zinc-800">
+                      Control Profile: {editingUser.fullName}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => setEditingUser(null)} 
+                    className="p-1 text-zinc-400 hover:text-zinc-650 hover:bg-zinc-100 rounded-full"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveUser} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider font-bold text-zinc-500 mb-1">Full Client Name</label>
+                    <input
+                      type="text"
+                      className="w-full text-xs p-2.5 rounded-lg border border-zinc-200 bg-white"
+                      value={editFullName}
+                      onChange={(e) => setEditFullName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider font-bold text-zinc-500 mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      className="w-full text-xs p-2.5 rounded-lg border border-zinc-200 bg-white"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider font-bold text-zinc-500 mb-1">Phone Line</label>
+                    <input
+                      type="text"
+                      className="w-full text-xs p-2.5 rounded-lg border border-zinc-200 bg-white"
+                      value={editPhoneNumber}
+                      onChange={(e) => setEditPhoneNumber(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider font-bold text-zinc-500 mb-1">System Security Role</label>
+                    <select
+                      className="w-full text-xs p-2.5 rounded-lg border border-zinc-200 bg-white font-bold"
+                      value={editRole}
+                      onChange={(e) => setEditRole(e.target.value as "user" | "admin")}
+                    >
+                      <option value="user">USER (Lounge Client)</option>
+                      <option value="admin">ADMIN (Executive Manager)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider font-bold text-zinc-500 mb-1">Country</label>
+                    <input
+                      type="text"
+                      className="w-full text-xs p-2.5 rounded-lg border border-zinc-200 bg-white"
+                      value={editCountry}
+                      onChange={(e) => setEditCountry(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider font-bold text-zinc-500 mb-1">Lounge Loyalty Balance</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        className="w-20 text-xs p-2.5 rounded-lg border border-zinc-200 bg-white font-bold"
+                        value={editLoyaltyPoints}
+                        onChange={(e) => setEditLoyaltyPoints(Number(e.target.value))}
+                        min="0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setEditLoyaltyPoints(p => p + 100)}
+                        className="bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] uppercase font-bold p-2.5 rounded-lg"
+                      >
+                        +100
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditLoyaltyPoints(p => Math.max(0, p - 50))}
+                        className="bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[10px] uppercase font-bold p-2.5 rounded-lg"
+                      >
+                        -50
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-3 flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingUser(null)}
+                      className="px-4 py-2 bg-zinc-205 text-zinc-700 text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-amber-500 text-zinc-900 text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-amber-600 shadow-sm"
+                    >
+                      Commit Profile Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            <div className="overflow-x-auto bg-white rounded-2xl border border-zinc-150">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50 uppercase text-zinc-500 font-bold">
+                  <tr className="border-b border-gray-100 bg-gray-50 uppercase text-zinc-500 font-bold">
                     <th className="p-3">Ref Client UID</th>
                     <th className="p-3">Full client Name</th>
                     <th className="p-3">Email Address</th>
                     <th className="p-3">Phone Line</th>
                     <th className="p-3">Loyalty points</th>
-                    <th className="p-3">Country Code</th>
+                    <th className="p-3">Security Role</th>
+                    <th className="p-3">Country</th>
+                    <th className="p-3 text-right">Administrative Dispatch</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {users.map((u) => (
                     <tr key={u.uid} className="hover:bg-zinc-50/50">
-                      <td className="p-3 font-mono font-bold text-slate-550">{u.uid.slice(0, 8)}...</td>
-                      <td className="p-3 font-semibold text-zinc-900">{u.fullName}</td>
-                      <td className="p-3 text-zinc-500">{u.email}</td>
-                      <td className="p-3 font-mono">{u.phoneNumber}</td>
+                      <td className="p-3 font-mono font-bold text-slate-550 shrink-0">
+                        {u.uid.slice(0, 10)}...
+                      </td>
+                      <td className="p-3 font-semibold text-zinc-900">
+                        {u.fullName || "Incognito Guest"}
+                      </td>
+                      <td className="p-3 text-zinc-650 font-medium">
+                        {u.email}
+                      </td>
+                      <td className="p-3 font-mono text-zinc-500">
+                        {u.phoneNumber || "Not bound"}
+                      </td>
                       <td className="p-3">
-                        <span className="bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full font-bold">
-                          {u.loyaltyPoints} pts
+                        <span className="bg-amber-100 text-amber-950 px-2.5 py-0.5 rounded-full font-bold">
+                          {u.loyaltyPoints || 0} pts
                         </span>
                       </td>
-                      <td className="p-3 text-zinc-500">{u.country}</td>
+                      <td className="p-3">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide inline-block ${
+                          u.role === "admin" 
+                            ? "bg-rose-100 text-rose-800 border border-rose-200" 
+                            : "bg-emerald-100 text-emerald-800 border border-emerald-250"
+                        }`}>
+                          {u.role || "user"}
+                        </span>
+                      </td>
+                      <td className="p-3 text-zinc-550 font-medium font-mono">{u.country || "IN"}</td>
+                      <td className="p-3 text-right">
+                        <div className="flex gap-1.5 justify-end">
+                          <button
+                            onClick={() => handleStartEditUser(u)}
+                            className="bg-zinc-100 text-zinc-700 hover:bg-amber-500 hover:text-zinc-950 p-2 rounded-lg transition-colors cursor-pointer"
+                            title="Edit Loyalty & Settings"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(u.uid, u.fullName || u.email)}
+                            className="bg-zinc-100 text-red-650 hover:bg-red-600 hover:text-white p-2 rounded-lg transition-colors cursor-pointer"
+                            title="Delete User"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   {users.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="text-center p-6 text-zinc-400">No client accounts created yet.</td>
+                      <td colSpan={8} className="text-center p-6 text-zinc-400">No client accounts created yet.</td>
                     </tr>
                   )}
                 </tbody>
@@ -870,7 +1077,7 @@ export default function AdminPanel({
               <div className="border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl p-10 text-center text-xs text-zinc-500">
                 <CreditCard className="w-10 h-10 text-zinc-400 mx-auto mb-2 shrink-0 animate-pulse" />
                 <p>No transactions registered on your merchant UPI key today.</p>
-                <p className="text-[10px] text-zinc-405 mt-1">Payments made to 9342956011@axl will show up here real-time.</p>
+                <p className="text-[10px] text-zinc-405 mt-1">Payments made to 9025049229@axl will show up here real-time.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
