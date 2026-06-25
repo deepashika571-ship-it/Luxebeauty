@@ -12,7 +12,7 @@ interface AdminPanelProps {
   onAddService: (service: BeautyService) => void;
   onDeleteService: (id: string) => void;
   onUpdateService: (service: BeautyService) => void;
-  onUpdateBookingStatus: (id: string, status: 'pending' | 'confirmed' | 'completed' | 'cancelled') => void;
+  onUpdateBookingStatus: (id: string, status: 'pending' | 'confirmed' | 'approved' | 'completed' | 'cancelled' | 'rejected') => void;
   onDeleteBooking: (id: string) => void;
   onAddOffer: (offer: OfferDeal) => void;
   onDeleteOffer: (id: string) => void;
@@ -499,7 +499,20 @@ export default function AdminPanel({
                             <img src={b.serviceImage} alt={b.serviceName} className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-zinc-200 dark:border-zinc-700" referrerPolicy="no-referrer" />
                           )}
                           <div>
-                            <p className="font-semibold">{b.serviceName}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="font-semibold">{b.serviceName}</p>
+                              <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded border ${
+                                b.status === "approved" || b.status === "confirmed"
+                                  ? "bg-green-100 dark:bg-green-950/40 text-green-850 dark:text-green-400 border-green-200/40"
+                                  : b.status === "pending"
+                                  ? "bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400 border-yellow-200/40"
+                                  : b.status === "completed"
+                                  ? "bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400 border-blue-200/40"
+                                  : "bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400 border-red-200/40"
+                              }`}>
+                                {b.status === "approved" || b.status === "confirmed" ? "Approved" : b.status === "pending" ? "Pending" : b.status === "completed" ? "Completed" : "Rejected"}
+                              </span>
+                            </div>
                             <p className="text-[10px] text-natural-gold font-bold">₹{b.servicePrice}</p>
                           </div>
                         </div>
@@ -510,12 +523,24 @@ export default function AdminPanel({
                       </td>
                       <td className="p-3 text-[11px] text-zinc-700">{b.artist}</td>
                       <td className="p-3">
-                        <div className="flex gap-1.5 flex-wrap">
+                        <div className="flex gap-1 flex-wrap">
                           <button
-                            onClick={() => onUpdateBookingStatus(b.id, "confirmed")}
-                            className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded text-[10px] font-bold hover:bg-emerald-100 cursor-pointer"
+                            onClick={() => onUpdateBookingStatus(b.id, "approved")}
+                            className="bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded text-[10px] font-bold hover:bg-green-100 cursor-pointer"
                           >
-                            Confirm
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => onUpdateBookingStatus(b.id, "rejected")}
+                            className="bg-red-50 text-red-700 border border-red-200 px-2 py-1 rounded text-[10px] font-bold hover:bg-red-100 cursor-pointer"
+                          >
+                            Reject
+                          </button>
+                          <button
+                            onClick={() => onUpdateBookingStatus(b.id, "pending")}
+                            className="bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-1 rounded text-[10px] font-bold hover:bg-yellow-100 cursor-pointer"
+                          >
+                            Pending
                           </button>
                           <button
                             onClick={() => onUpdateBookingStatus(b.id, "completed")}
@@ -524,16 +549,11 @@ export default function AdminPanel({
                             Done
                           </button>
                           <button
-                            onClick={() => onUpdateBookingStatus(b.id, "cancelled")}
-                            className="bg-zinc-50 text-zinc-700 border border-zinc-205 px-2 py-1 rounded text-[10px] font-bold hover:bg-zinc-100 cursor-pointer"
-                          >
-                            Cancel
-                          </button>
-                          <button
                             onClick={() => onDeleteBooking(b.id)}
-                            className="bg-rose-50 text-rose-700 border border-rose-200 px-2 py-1 rounded text-[10px] font-bold hover:bg-rose-100 cursor-pointer flex items-center gap-0.5"
+                            className="bg-zinc-50 text-zinc-600 border border-zinc-200 px-1.5 py-1 rounded text-[10px] font-bold hover:bg-zinc-100 cursor-pointer"
+                            title="Delete booking record"
                           >
-                            <Trash2 className="w-3 h-3" /> Delete
+                            <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
                       </td>

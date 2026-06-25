@@ -29,7 +29,7 @@ export interface BeautyService {
 
 export type PaymentMethod = 'upi' | 'card' | 'netbanking' | 'wallet' | 'cash';
 export type PaymentStatus = 'pending' | 'paid' | 'unpaid';
-export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
+export type BookingStatus = 'pending' | 'confirmed' | 'approved' | 'completed' | 'cancelled' | 'rejected';
 
 export interface Booking {
   id: string;

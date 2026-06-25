@@ -215,8 +215,8 @@ export default function UserProfileDashboard({
     }
   }, [activeTab, googleAccessToken]);
 
-  const upcomingBookings = bookings.filter(b => b.status === "confirmed" || b.status === "pending");
-  const pastBookings = bookings.filter(b => b.status === "completed" || b.status === "cancelled");
+  const upcomingBookings = bookings.filter(b => b.status === "confirmed" || b.status === "approved" || b.status === "pending");
+  const pastBookings = bookings.filter(b => b.status === "completed" || b.status === "cancelled" || b.status === "rejected");
   const allBookingsOrdered = [...bookings].sort((a, b) => {
     return new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime();
   });
@@ -385,18 +385,18 @@ export default function UserProfileDashboard({
                           <div className="flex flex-wrap items-center gap-2">
                             <h5 className="font-bold text-xs text-zinc-900 dark:text-white">{b.serviceName}</h5>
                             <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
-                              b.status === "confirmed" 
-                                ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 border-emerald-200/30" 
+                              b.status === "confirmed" || b.status === "approved"
+                                ? "bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400 border-green-200/30" 
                                 : b.status === "pending"
-                                ? "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border-amber-200/30"
+                                ? "bg-yellow-100 dark:bg-yellow-950/30 text-yellow-800 dark:text-yellow-400 border-yellow-200/30"
                                 : b.status === "completed"
-                                ? "bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400 border-blue-200/30"
-                                : "bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-400 border-rose-200/30"
+                                ? "bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-400 border-blue-200/30"
+                                : "bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400 border-red-200/30"
                             }`}>
-                              {b.status === "confirmed" && "Approved by Admin"}
-                              {b.status === "pending" && "Awaiting Confirmation"}
-                              {b.status === "completed" && "Completed Journey"}
-                              {b.status === "cancelled" && "Cancelled Journey"}
+                              {(b.status === "confirmed" || b.status === "approved") && "Approved"}
+                              {b.status === "pending" && "Pending"}
+                              {b.status === "completed" && "Completed"}
+                              {(b.status === "cancelled" || b.status === "rejected") && "Rejected"}
                             </span>
                           </div>
                           <p className="text-[11px] text-zinc-500">Date: <strong className="text-zinc-700 dark:text-zinc-350">{b.date}</strong> • Slot: <strong className="text-zinc-700 dark:text-zinc-350">{b.timeSlot}</strong></p>
@@ -414,7 +414,7 @@ export default function UserProfileDashboard({
                           </span>
                         </div>
 
-                        {b.status === "confirmed" && b.paymentStatus !== "paid" && (
+                        {(b.status === "confirmed" || b.status === "approved") && b.paymentStatus !== "paid" && (
                           <button
                             type="button"
                             onClick={() => {
