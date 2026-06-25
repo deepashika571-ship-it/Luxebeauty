@@ -297,30 +297,35 @@ export default function App() {
         });
 
         // Pull Profile from Firestore
-        const pfRef = doc(db, "users", currentUser.uid);
-        const pfSnap = await getDoc(pfRef);
-        if (pfSnap.exists()) {
-          const fetched = pfSnap.data() as UserProfile;
-          setProfile(fetched);
-          setLoyaltyPoints(fetched.loyaltyPoints);
-        } else {
-          // Setup a new Profile in Firestore if missing
-          const fallbackProfile: UserProfile = {
-            uid: currentUser.uid,
-            email: currentUser.email || "",
-            fullName: currentUser.displayName || "Luxe Guest",
-            phoneNumber: currentUser.phoneNumber || "+91 9025049229",
-            country: "India",
-            role: currentUser.email?.toLowerCase().includes("admin") ? "admin" : "user",
-            loyaltyPoints: 200, // 200 Welcome bonus
-            referralCode: `LUXE${Math.floor(1000 + Math.random() * 9000)}`,
-            wishlist: [],
-            createdAt: new Date().toISOString(),
-          };
-          await setDoc(pfRef, fallbackProfile);
-          sendFormspreeUpdate("user_registered", { userProfile: fallbackProfile });
-          setProfile(fallbackProfile);
-          setLoyaltyPoints(200);
+        try {
+          const pfRef = doc(db, "users", currentUser.uid);
+          const pfSnap = await getDoc(pfRef);
+          if (pfSnap.exists()) {
+            const fetched = pfSnap.data() as UserProfile;
+            setProfile(fetched);
+            setLoyaltyPoints(fetched.loyaltyPoints);
+          } else {
+            // Setup a new Profile in Firestore if missing
+            const fallbackProfile: UserProfile = {
+              uid: currentUser.uid,
+              email: currentUser.email || "",
+              fullName: currentUser.displayName || "Luxe Guest",
+              phoneNumber: currentUser.phoneNumber || "+91 9025049229",
+              country: "India",
+              role: currentUser.email?.toLowerCase().includes("admin") ? "admin" : "user",
+              loyaltyPoints: 200, // 200 Welcome bonus
+              referralCode: `LUXE${Math.floor(1000 + Math.random() * 9000)}`,
+              wishlist: [],
+              createdAt: new Date().toISOString(),
+            };
+            await setDoc(pfRef, fallbackProfile);
+            sendFormspreeUpdate("user_registered", { userProfile: fallbackProfile });
+            setProfile(fallbackProfile);
+            setLoyaltyPoints(200);
+          }
+        } catch (err: any) {
+          console.warn("Firestore profile loading failed or restricted:", err);
+          setAuthError(err.code ? `${err.code}: ${err.message}` : err.message || "Failed profile data synchronization");
         }
       } else {
         setUser(null);
@@ -505,7 +510,7 @@ export default function App() {
       }, 1005);
     } catch (err: any) {
       console.warn("Google authentication issue:", err);
-      setAuthError(err.message || "Failed Google identification");
+      setAuthError(err.code ? `${err.code}: ${err.message}` : err.message || "Failed Google identification");
     }
   };
 
@@ -1481,13 +1486,47 @@ export default function App() {
               </div>
 
               {authError && (
-                <div className="bg-red-50 text-red-700 text-xs p-3.5 rounded-xl border border-red-100 text-left font-sans leading-relaxed">
-                  <span className="font-bold block mb-0.5">Authentication Error</span>
-                  {authError}
-                  {authError.includes("auth/operation-not-allowed") && (
-                    <span className="block mt-1.5 text-[11px] text-red-600 font-semibold">
-                      Note: You must enable Google Authentication inside your Firebase Console to authorize this action.
+                <div className="bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300 text-xs p-4 rounded-xl border border-amber-200/50 dark:border-amber-900/40 text-left font-sans leading-relaxed space-y-2 animate-fade-in">
+                  <div>
+                    <span className="font-bold block text-amber-950 dark:text-amber-200 text-[13px] mb-0.5">Authentication Issue</span>
+                    <span className="text-zinc-600 dark:text-zinc-400 font-mono text-[10.5px] bg-white/60 dark:bg-black/30 p-1.5 rounded block overflow-auto max-h-24 select-all border border-zinc-150 dark:border-zinc-800">
+                      {authError}
                     </span>
+                  </div>
+                  
+                  {(authError.includes("auth/operation-not-allowed") || authError.toLowerCase().includes("operation-not-allowed")) && (
+                    <div className="mt-2 bg-white/70 dark:bg-black/25 p-3 rounded-lg border border-amber-200/50 space-y-1">
+                      <span className="font-semibold text-amber-950 dark:text-amber-200 text-[11px] block">💡 How to fix (Enable Sign-In Provider):</span>
+                      <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                        Firebase Authentication has not been enabled for Google or Email Sign-in in your project <strong>beauty-ae724</strong>.
+                      </p>
+                      <ol className="list-decimal pl-4 text-[10.5px] text-zinc-600 dark:text-zinc-400 space-y-1">
+                        <li>Go to the <a href="https://console.firebase.google.com/project/beauty-ae724/authentication/providers" target="_blank" rel="noopener noreferrer" className="text-natural-gold hover:underline font-bold">Firebase Console &rarr;</a></li>
+                        <li>Navigate to <strong>Authentication</strong> &gt; <strong>Sign-in method</strong>.</li>
+                        <li>Click <strong>Add new provider</strong>, choose <strong>Google</strong> (and <strong>Email/Password</strong>), enable them, and save.</li>
+                      </ol>
+                    </div>
+                  )}
+
+                  {(authError.includes("auth/unauthorized-domain") || authError.toLowerCase().includes("unauthorized-domain") || authError.toLowerCase().includes("unauthorized domain") || authError.toLowerCase().includes("disallowed")) && (
+                    <div className="mt-2 bg-white/70 dark:bg-black/25 p-3 rounded-lg border border-amber-200/50 space-y-1.5">
+                      <span className="font-semibold text-amber-950 dark:text-amber-200 text-[11px] block">💡 How to fix (Authorize this Domain):</span>
+                      <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                        This deployed domain is not authorized in your Firebase Project to run Google Auth Popups.
+                      </p>
+                      <div className="bg-amber-100/50 dark:bg-amber-950/40 p-2 rounded border border-amber-200 text-[11px]">
+                        <span className="font-semibold text-zinc-700 dark:text-zinc-300 block mb-1">Domain to authorize:</span>
+                        <code className="bg-white dark:bg-zinc-900 px-1.5 py-1 rounded font-mono font-bold text-natural-gold text-xs block select-all border border-amber-200/30">
+                          {window.location.hostname}
+                        </code>
+                      </div>
+                      <ol className="list-decimal pl-4 text-[10.5px] text-zinc-600 dark:text-zinc-400 space-y-1">
+                        <li>Go to the <a href="https://console.firebase.google.com/project/beauty-ae724/authentication/settings" target="_blank" rel="noopener noreferrer" className="text-natural-gold hover:underline font-bold">Firebase Console &rarr;</a></li>
+                        <li>Navigate to <strong>Authentication</strong> &gt; <strong>Settings</strong> tab.</li>
+                        <li>Under <strong>Authorized domains</strong>, click <strong>Add domain</strong>.</li>
+                        <li>Paste <code className="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded font-mono font-bold">{window.location.hostname}</code> and click Add.</li>
+                      </ol>
+                    </div>
                   )}
                 </div>
               )}
