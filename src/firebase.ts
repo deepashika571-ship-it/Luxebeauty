@@ -32,6 +32,7 @@ import {
 const firebaseConfig = {
   apiKey: "AIzaSyD51tGPZCaHPOAA_dnj_DIQHPAzsZniTlI",
   authDomain: "beauty-ae724.firebaseapp.com",
+  databaseURL: "https://beauty-ae724-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "beauty-ae724",
   storageBucket: "beauty-ae724.firebasestorage.app",
   messagingSenderId: "432217513680",
